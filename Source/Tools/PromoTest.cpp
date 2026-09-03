@@ -691,6 +691,40 @@ int main(int argc, char** argv)
                           "a sync preserves the product link stored by a detail fetch");
                     check(after.detailRevision == db::Database::detailRevision(),
                           "a detail fetch stamps the parser generation");
+
+                    break;
+                }
+
+                // A per-pound price without its unit is a wrong price, not a
+                // shorter one. Metro states the unit in the detail's price_text
+                // — "/lb - 9,90$/kg" — so among a couple of dozen items, at
+                // least one detail must come back carrying one.
+                int tried = 0;
+                bool unitSeen = false;
+
+                for (const model::Item& probe : database.searchItems("poulet"))
+                {
+                    if (tried >= 25 || unitSeen)
+                        break;
+
+                    model::Item filled = probe;
+                    ++tried;
+
+                    if (feed.fetchItemDetail(filled.id, postalCode, filled).ok
+                        && !filled.priceText.empty())
+                    {
+                        unitSeen = true;
+                        std::printf("      unit found after %d fetch(es): %s\n",
+                                    tried, filled.priceText.c_str());
+                    }
+                }
+
+                check(unitSeen, "the detail parser reads the unit out of price_text");
+
+                for (const model::Item& after : database.searchItems("poulet"))
+                {
+                    if (after.id != detailed.id)
+                        continue;
                 }
             }
         }

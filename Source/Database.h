@@ -104,7 +104,10 @@ public:
     // The generation of the detail parser. Bumped when fetchItemDetail learns to
     // read a field the stored rows cannot have; rows below it are re-asked once,
     // as they are walked past, and nothing the user perceives regresses.
-    static int detailRevision() { return 3; }
+    // 4: the detail parser learnt to read the unit out of price_text. Rows
+    // written by revision 3 carry a fetched detail with the unit missing, so
+    // they are asked about once more.
+    static int detailRevision() { return 4; }
 
     // Writes what only the per-item endpoint knows: the original price, the
     // format, the SKU, the product page, the in-store-only flag. Never touches the current price —

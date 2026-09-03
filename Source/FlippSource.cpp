@@ -143,15 +143,27 @@ namespace
     // where the number alone would be misleading or missing.
     std::string priceLine(const json& j)
     {
+        // Three fields, because the two endpoints disagree on where the unit
+        // lives. The search reply writes it in post_price_text; the per-item
+        // reply writes it in price_text — "/lb - 9,90$/kg" — and reading only
+        // pre and post left a fresh whole chicken announced as 4,49 $ flat,
+        // which is not its price, it is its price per pound. The banner said
+        // so; the parser dropped it.
         const std::string pre  = str(j, "pre_price_text");
+        const std::string mid  = str(j, "price_text");
         const std::string post = str(j, "post_price_text");
 
         std::string line = pre;
-        if (!post.empty())
+
+        for (const std::string* part : { &mid, &post })
         {
+            if (part->empty() || *part == line || (part == &post && *part == mid))
+                continue;
+
             if (!line.empty()) line += ' ';
-            line += post;
+            line += *part;
         }
+
         return line;
     }
 
