@@ -761,7 +761,7 @@ wxPanel* MainWindow::buildFavoritesPage(wxNotebook* book)
     auto* sizer = new wxBoxSizer(wxVERTICAL);
     const int border = FromDIP(6);
 
-    primaryLabels_[PageFavorites] = addLabel(page, sizer, loc::tr("Favorites:", "Favoris :"));
+    addLabel(page, sizer, loc::tr("Favorites:", "Favoris :"));
     favoriteList_ = makeList(page, loc::tr("Favorites", "Favoris"));
     addColumn(favoriteList_, loc::tr("Words", "Mots"), FromDIP(260));
     addColumn(favoriteList_, loc::tr("Banner", "Bannière"), FromDIP(150));
@@ -783,8 +783,9 @@ wxPanel* MainWindow::buildFavoritesPage(wxNotebook* book)
     sizer->Add(sortChoices_[2], 0, wxEXPAND | wxLEFT | wxRIGHT, border);
 
     // The banner comes immediately before the items it filters, so Tab reads as
-    // a sentence: this store, then what it has.
-    addLabel(page, sizer, loc::tr("Banner:", "Bannière :"));
+    // a sentence: this store, then what it has. It is also where Ctrl+4 lands,
+    // so this is the label the tab name is folded into.
+    primaryLabels_[PageFavorites] = addLabel(page, sizer, loc::tr("Banner:", "Bannière :"));
     matchMerchant_ = new wxChoice(page, wxID_ANY);
     matchMerchant_->SetName(loc::tr("Banner", "Bannière"));
     sizer->Add(matchMerchant_, 0, wxEXPAND | wxLEFT | wxRIGHT, border);
@@ -852,7 +853,7 @@ wxPanel* MainWindow::buildListPage(wxNotebook* book)
     auto* sizer = new wxBoxSizer(wxVERTICAL);
     const int border = FromDIP(6);
 
-    addLabel(page, sizer, loc::tr("Banner:", "Bannière :"));
+    primaryLabels_[PageList] = addLabel(page, sizer, loc::tr("Banner:", "Bannière :"));
     listMerchant_ = new wxChoice(page, wxID_ANY);
     listMerchant_->SetName(loc::tr("Banner", "Bannière"));
     sizer->Add(listMerchant_, 0, wxEXPAND | wxLEFT | wxRIGHT, border);
@@ -870,7 +871,7 @@ wxPanel* MainWindow::buildListPage(wxNotebook* book)
         announce(listTotal_->GetValue(), 500);
     });
 
-    primaryLabels_[PageList] = addLabel(page, sizer, loc::tr("Shopping list:", "Liste d'épicerie :"));
+    addLabel(page, sizer, loc::tr("Shopping list:", "Liste d'épicerie :"));
     shoppingList_ = makeList(page, loc::tr("Shopping list", "Liste d'épicerie"));
     addColumn(shoppingList_, loc::tr("Item", "Article"), FromDIP(320));
     addColumn(shoppingList_, loc::tr("Quantity", "Quantité"), FromDIP(90));
@@ -3089,8 +3090,12 @@ wxWindow* MainWindow::primaryControl(int page) const
         case PageSettings:  return postalField_;
         case PageFlyers:    return flyerList_;
         case PageSearch:    return searchField_;
-        case PageFavorites: return favoriteList_;
-        case PageList:      return shoppingList_;
+        // The banner, not the list. Shopping is done store by store, so the
+        // first decision on arriving is which store — and the list is one Tab
+        // away, already narrowed to it. The favourites themselves stay one
+        // Shift+Tab back, where the rules are edited rather than read.
+        case PageFavorites: return matchMerchant_;
+        case PageList:      return listMerchant_;
         default:            return nullptr;
     }
 }
