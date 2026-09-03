@@ -75,7 +75,7 @@ namespace
                 if (e->quantity > 1)
                     out << e->quantity << " x ";
 
-                out << u8(e->name) << dash << fmt::price(*e);
+                out << fmt::properCase(u8(e->name)) << dash << fmt::price(*e);
 
                 const wxString when = fmt::validity(e->validTo);
                 if (!when.empty())
@@ -126,7 +126,7 @@ namespace
 
             out << csvField(u8(e.merchantName)) << ","
                 << e.quantity << ","
-                << csvField(u8(e.name)) << ","
+                << csvField(fmt::properCase(u8(e.name))) << ","
                 << csvField(priceCell) << ","
                 << csvField(u8(e.validTo)) << "\n";
         }

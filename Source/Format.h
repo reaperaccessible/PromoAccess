@@ -76,6 +76,19 @@ namespace fmt
     // interface language needs no resync.
     wxString itemName(const std::string& rawName);
 
+    // A name written entirely in capitals, given back with each word starting on
+    // one capital and continuing in lower case.
+    //
+    // Three banners out of six SHOUT: 98 % of Metro's items are all-caps, 92 %
+    // of Maxi's, 91 % of IGA's — and none of Super C's. That is a habit of their
+    // feed, not information, and it left the same kind of product reading one
+    // way at one store and another way at the next.
+    //
+    // Only fully capitalised names are touched. A banner that already writes
+    // "biscuits Célébration Leclerc" has said something with its capitals, and
+    // recasing that would destroy it.
+    wxString properCase(const wxString& name);
+
     // Everything worth hearing about one item, as one sentence: name, price,
     // what it was, the format, the banner, the validity.
     wxString itemDetail(const model::Item& item);

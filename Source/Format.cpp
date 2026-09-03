@@ -1,4 +1,6 @@
 #include "Format.h"
+
+#include <windows.h>
 #include "Localization.h"
 #include "Database.h"
 #include "Text.h"
@@ -85,11 +87,100 @@ namespace
     }
 }
 
+namespace
+{
+    // Case conversion through Windows rather than through towlower.
+    //
+    // std::towlower leaves accented capitals exactly as they are under the "C"
+    // locale — É stays É — so a name came back as "Bacon TranchÉ MÈre Michel".
+    // The same trap Text.cpp documents for the search index, met again here.
+    // CharLowerBuffW and CharUpperBuffW use the system's own tables and get the
+    // whole Latin range right.
+    wxUniChar lowered(wxUniChar c)
+    {
+        wchar_t w = static_cast<wchar_t>(c.GetValue());
+        ::CharLowerBuffW(&w, 1);
+        return wxUniChar(w);
+    }
+
+    wxUniChar raised(wxUniChar c)
+    {
+        wchar_t w = static_cast<wchar_t>(c.GetValue());
+        ::CharUpperBuffW(&w, 1);
+        return wxUniChar(w);
+    }
+
+    // A character that has a case is a letter. Asked this way rather than with
+    // iswalpha, which answers for the "C" locale and not for the text at hand.
+    bool hasCase(wxUniChar c)
+    {
+        return lowered(c) != c || raised(c) != c;
+    }
+}
+
+wxString properCase(const wxString& name)
+{
+    bool anyLetter = false;
+
+    for (const wxUniChar c : name)
+    {
+        if (!hasCase(c))
+            continue;
+
+        anyLetter = true;
+
+        // One lower-case letter is enough to leave the name alone: the banner
+        // wrote it that way on purpose.
+        if (lowered(c) == c)
+            return name;
+    }
+
+    if (!anyLetter)
+        return name;
+
+    // A letter is capitalised when it opens a word, and lowered otherwise.
+    //
+    // An apostrophe and a hyphen do NOT open a word. French elides: capitalising
+    // after the apostrophe gives "C'Est Prêt", which no one writes, and the same
+    // rule turns "prêt-à-manger" into "Prêt-À-Manger". Leaving them inside the
+    // word gives "C'est prêt" and "Prêt-à-manger". The cost is a place name like
+    // "Côte-Nord" coming back as "Côte-nord" — rarer, and far less jarring.
+    //
+    // A digit does open a word, which is what keeps "6X355" from becoming
+    // "6x355".
+    wxString out;
+    out.reserve(name.length());
+
+    bool insideWord = false;
+
+    for (const wxUniChar c : name)
+    {
+        const bool letter = hasCase(c);
+        const bool joiner = (c == wxUniChar('\'')
+                          || c == wxUniChar(0x2019)   // apostrophe typographique
+                          || c == wxUniChar('-'));
+
+        if (!letter)
+        {
+            out += c;
+
+            // A joiner keeps the word going; anything else ends it.
+            insideWord = insideWord && joiner;
+            continue;
+        }
+
+        out += insideWord ? lowered(c) : raised(c);
+        insideWord = true;
+    }
+
+    return out;
+}
+
 wxString itemName(const std::string& rawName)
 {
     const size_t bar = rawName.find('|');
     if (bar == std::string::npos)
-        return u8(rawName);
+        return properCase(u8(rawName));
 
     const std::string french  = trimmed(rawName.substr(0, bar));
     const std::string english = trimmed(rawName.substr(bar + 1));
@@ -97,7 +188,7 @@ wxString itemName(const std::string& rawName)
     // A bar with nothing on one side is not a translation pair; leave it alone
     // rather than hand back an empty row.
     if (french.empty() || english.empty())
-        return u8(rawName);
+        return properCase(u8(rawName));
 
     std::string kept  = loc::isFrench() ? french  : english;
     const std::string& other = loc::isFrench() ? english : french;
@@ -110,7 +201,7 @@ wxString itemName(const std::string& rawName)
             kept += other.substr(size);
     }
 
-    return u8(kept);
+    return properCase(u8(kept));
 }
 
 wxString itemDetail(const model::Item& item)

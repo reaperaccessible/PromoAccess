@@ -125,6 +125,38 @@ static void runOfflineChecks()
         check(!wildcard, "tokens strips the LIKE wildcards % and _");
     }
 
+    // --- Names that SHOUT ------------------------------------------------------
+    // Three banners in six write everything in capitals. Only those names are
+    // recased; one written in mixed case was written that way on purpose.
+    {
+        // wxString::FromUTF8 on every accented input. A wxString built straight
+        // from a literal reads those bytes in the machine's ANSI code page, and
+        // the test would be measuring mojibake rather than the casing rule.
+        auto cased = [](const char* utf8)
+        {
+            return fmt::properCase(wxString::FromUTF8(utf8)).utf8_string();
+        };
+
+        checkEqual(cased("BACON TRANCHÉ MÈRE MICHEL"),
+                   "Bacon Tranché Mère Michel", "capitals come down, accents included");
+        checkEqual(cased("CREVETTES PANÉES EN PAPILLON"),
+                   "Crevettes Panées En Papillon", "and every word gets its capital");
+        // An apostrophe and a hyphen keep the word going: French elides, and
+        // "C'Est Prêt" is not something anyone writes.
+        checkEqual(cased("C'EST PRÊT!"),
+                   "C'est Prêt!", "an apostrophe does not start a new word");
+        checkEqual(cased("PRÊT-À-MANGER"),
+                   "Prêt-à-manger", "and neither does a hyphen");
+        checkEqual(cased("SODA ZEVIA, 6X355 ML"),
+                   "Soda Zevia, 6X355 Ml", "a letter after a digit is not a new word");
+
+        // Left alone: the banner said something with those capitals.
+        checkEqual(cased("biscuits Célébration Leclerc"),
+                   "biscuits Célébration Leclerc", "a name with lower case is left alone");
+        checkEqual(cased("125 g"), "125 g", "and so is one already lower");
+        checkEqual(cased(""), "", "an empty name survives");
+    }
+
     // --- Postal codes --------------------------------------------------------
     checkEqual(postal::canonical("j3p7s7"), "J3P7S7", "postal accepts lower case");
     checkEqual(postal::canonical(" J3P7S7 "), "J3P7S7", "postal tolerates surrounding blanks");
@@ -143,7 +175,7 @@ static void runOfflineChecks()
     // The size is sometimes written only on the English side; dropping it would
     // leave a price with no format.
     checkEqual(fmt::itemName("FRAMBOISES | RASPBERRIES, 170 G").utf8_string(),
-               "FRAMBOISES, 170 G", "itemName rescues a size left on the other side");
+               "Framboises, 170 G", "itemName rescues a size left on the other side");
 
     checkEqual(fmt::itemName("jus de pomme Selection").utf8_string(),
                "jus de pomme Selection", "itemName leaves a single-language name alone");

@@ -2366,7 +2366,11 @@ void MainWindow::reloadList()
     {
         const model::ListEntry& e = listEntries_[n];
 
-        const long row = shoppingList_->InsertItem(static_cast<long>(n), u8(e.name));
+        // Through the same recasing as everywhere else: a line added before the
+        // rule existed is still stored SHOUTING, and the list would otherwise
+        // read half one way and half the other.
+        const long row = shoppingList_->InsertItem(static_cast<long>(n),
+                                                   fmt::properCase(u8(e.name)));
         shoppingList_->SetItem(row, 1, wxString::Format("%d", e.quantity));
         shoppingList_->SetItem(row, 2, fmt::lineTotal(e));
         shoppingList_->SetItem(row, 3, u8(e.merchantName));
