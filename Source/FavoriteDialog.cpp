@@ -14,8 +14,13 @@ FavoriteDialog::FavoriteDialog(wxWindow* parent,
                                const std::vector<model::Merchant>& merchants,
                                const model::Favorite* existing)
     : wxDialog(parent, wxID_ANY,
-               existing ? loc::tr("Edit favorite", "Modifier le favori")
-                        : loc::tr("New favorite", "Nouveau favori"),
+               // A favourite seeded from an item has no identifier yet, so it is
+               // being created even though a seed was handed in. Titling that
+               // "Edit" told the reader they were changing something that did
+               // not exist.
+               (existing != nullptr && existing->id != 0)
+                   ? loc::tr("Edit favorite", "Modifier le favori")
+                   : loc::tr("New favorite", "Nouveau favori"),
                wxDefaultPosition, wxDefaultSize,
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
     , merchants_(merchants)

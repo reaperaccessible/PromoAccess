@@ -751,6 +751,17 @@ wxPanel* MainWindow::buildSearchPage(wxNotebook* book)
     // is no trailing button row to sit in front of.
     addDetailPane(1, page, sizer, searchList_, &searchResults_);
 
+    // The buttons are drawn above the results but come AFTER them in the tab
+    // chain, exactly as on the flyers tab. Reading order: what you searched for,
+    // the filters, the results, the details — and only then the actions. Before
+    // this, reaching "Add to favorites" from a result meant four Shift+Tabs
+    // backwards past the sort and two other buttons.
+    go->MoveAfterInTabOrder(detailPanes_[1].field);
+    add->MoveAfterInTabOrder(go);
+    watch->MoveAfterInTabOrder(add);
+    detail->MoveAfterInTabOrder(watch);
+    product->MoveAfterInTabOrder(detail);
+
     page->SetSizer(sizer);
     return page;
 }
@@ -1141,6 +1152,10 @@ void MainWindow::buildAccelerators()
         { wxACCEL_CTRL,   'S',     ID_LIST_EXPORT },
         { wxACCEL_CTRL,   'D',     ID_DETAIL },
         { wxACCEL_CTRL | wxACCEL_SHIFT, 'O', ID_PRODUCT_PAGE },
+        // Add the selected item to the favourites, from any list that holds
+        // items. The button for it sits several stops away on two of the three
+        // tabs, and this is an action taken on the item under the cursor.
+        { wxACCEL_CTRL | wxACCEL_SHIFT, 'F', ID_FAVORITE_FROM_ITEM },
     };
     SetAcceleratorTable(wxAcceleratorTable(WXSIZEOF(entries), entries));
 
@@ -1178,6 +1193,12 @@ void MainWindow::buildAccelerators()
     }, ID_SEARCH);
 
     Bind(wxEVT_MENU,   [this](wxCommandEvent&) { announceSelectedDetail(); }, ID_DETAIL);
+
+    Bind(wxEVT_MENU, [this](wxCommandEvent&)
+    {
+        wxCommandEvent watch(wxEVT_BUTTON, ID_FAVORITE_FROM_ITEM);
+        ProcessWindowEvent(watch);
+    }, ID_FAVORITE_FROM_ITEM);
     Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { announceSelectedDetail(); }, ID_DETAIL);
 
     Bind(wxEVT_MENU,   [this](wxCommandEvent&) { openSelectedProductPage(); }, ID_PRODUCT_PAGE);
@@ -1249,9 +1270,20 @@ void MainWindow::buildAccelerators()
     // true next week.
     Bind(wxEVT_BUTTON, [this](wxCommandEvent&)
     {
-        wxListCtrl* list = (book_->GetSelection() == PageFlyers) ? flyerItemList_ : searchList_;
-        const std::vector<model::Item>& items =
-            (book_->GetSelection() == PageFlyers) ? flyerItems_ : searchResults_;
+        // Whichever item list the user is standing on, and the one this tab is
+        // about when they are standing on a button. Chosen by tab before, which
+        // meant the favourites tab fell through to the search results — and a
+        // shortcut pressed there watched the wrong item.
+        std::vector<model::Item>* itemsPtr = nullptr;
+        wxListCtrl* list = focusedItemList(itemsPtr);
+
+        if (list == nullptr || itemsPtr == nullptr)
+        {
+            announce(loc::tr("No item selected.", "Aucun article sélectionné."));
+            return;
+        }
+
+        const std::vector<model::Item>& items = *itemsPtr;
 
         const long row = selectedRow(list);
         if (row < 0 || static_cast<size_t>(row) >= items.size())

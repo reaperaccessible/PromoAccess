@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(PromoAccess VERSION 1.0.10 LANGUAGES C CXX)   # display form is 1.10, see Source/Version.h
+project(PromoAccess VERSION 1.0.11 LANGUAGES C CXX)   # display form is 1.11, see Source/Version.h
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
