@@ -148,7 +148,15 @@ static void runOfflineChecks()
         checkEqual(cased("PRÊT-À-MANGER"),
                    "Prêt-à-manger", "and neither does a hyphen");
         checkEqual(cased("SODA ZEVIA, 6X355 ML"),
-                   "Soda Zevia, 6X355 Ml", "a letter after a digit is not a new word");
+                   "Soda Zevia, 6X355 ml", "a unit in capitals is simply wrong");
+
+        // The name that got away from the first rule: the banner shouted the
+        // product and wrote the unit correctly, and one lower-case letter
+        // anywhere was enough to skip the whole name.
+        checkEqual(cased("MAYONNAISE MAG, 890 mL"),
+                   "Mayonnaise Mag, 890 ml", "a correct unit does not save a shouting name");
+        checkEqual(cased("BARRES VAL NATURE 148/190 G"),
+                   "Barres Val Nature 148/190 g", "and the unit comes down with it");
 
         // Left alone: the banner said something with those capitals.
         checkEqual(cased("biscuits Célébration Leclerc"),
@@ -175,7 +183,7 @@ static void runOfflineChecks()
     // The size is sometimes written only on the English side; dropping it would
     // leave a price with no format.
     checkEqual(fmt::itemName("FRAMBOISES | RASPBERRIES, 170 G").utf8_string(),
-               "Framboises, 170 G", "itemName rescues a size left on the other side");
+               "Framboises, 170 g", "itemName rescues a size left on the other side");
 
     checkEqual(fmt::itemName("jus de pomme Selection").utf8_string(),
                "jus de pomme Selection", "itemName leaves a single-language name alone");

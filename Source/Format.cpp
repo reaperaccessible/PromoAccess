@@ -1,6 +1,8 @@
 #include "Format.h"
 
 #include <windows.h>
+
+#include <vector>
 #include "Localization.h"
 #include "Database.h"
 #include "Text.h"
@@ -118,61 +120,156 @@ namespace
     }
 }
 
-wxString properCase(const wxString& name)
+namespace
 {
-    bool anyLetter = false;
-
-    for (const wxUniChar c : name)
+    // Units written in capitals are simply wrong, and the right form is not a
+    // matter of taste: 890 ML is 890 ml. Lowered whatever the rest of the name
+    // does, which is also what keeps "890 mL" from becoming "890 Ml".
+    bool isUnit(const wxString& word)
     {
-        if (!hasCase(c))
-            continue;
+        static const wxString kUnits[] =
+        {
+            "g", "kg", "mg", "ml", "l", "cl", "lb", "oz", "cm", "mm", "m", "po"
+        };
 
-        anyLetter = true;
+        const wxString lower = word.Lower();
 
-        // One lower-case letter is enough to leave the name alone: the banner
-        // wrote it that way on purpose.
-        if (lowered(c) == c)
-            return name;
+        for (const wxString& unit : kUnits)
+            if (lower == unit)
+                return true;
+
+        return false;
     }
 
-    if (!anyLetter)
+    bool allUpper(const wxString& word)
+    {
+        bool anyCased = false;
+
+        for (const wxUniChar c : word)
+        {
+            if (!hasCase(c))
+                continue;
+
+            anyCased = true;
+
+            if (lowered(c) == c)
+                return false;
+        }
+
+        return anyCased;
+    }
+
+    // Words, for this purpose: runs of letters, with apostrophes and hyphens
+    // holding a word together. A digit ends one, so "6X355" is "X" between two
+    // numbers rather than one long word.
+    std::vector<wxString> words(const wxString& name)
+    {
+        std::vector<wxString> out;
+        wxString current;
+
+        for (const wxUniChar c : name)
+        {
+            const bool joiner = (c == wxUniChar('\'')
+                              || c == wxUniChar(0x2019)
+                              || c == wxUniChar('-'));
+
+            if (hasCase(c) || (joiner && !current.empty()))
+            {
+                current += c;
+                continue;
+            }
+
+            if (!current.empty())
+            {
+                out.push_back(current);
+                current.clear();
+            }
+        }
+
+        if (!current.empty())
+            out.push_back(current);
+
+        return out;
+    }
+}
+
+wxString properCase(const wxString& name)
+{
+    // Does this name SHOUT?
+    //
+    // Asked of the words of three letters or more, and of them only. The first
+    // rule looked for a single lower-case letter anywhere, and "MAYONNAISE MAG,
+    // 890 mL" therefore escaped untouched: the banner had shouted the product
+    // and written the unit correctly. Short words are exactly where the
+    // exceptions live — units, sigles — so they get no vote.
+    bool anyLongWord = false;
+
+    for (const wxString& word : words(name))
+    {
+        if (word.length() < 3)
+            continue;
+
+        anyLongWord = true;
+
+        if (!allUpper(word))
+            return name;   // a banner that writes in mixed case meant it
+    }
+
+    if (!anyLongWord)
         return name;
 
-    // A letter is capitalised when it opens a word, and lowered otherwise.
-    //
-    // An apostrophe and a hyphen do NOT open a word. French elides: capitalising
-    // after the apostrophe gives "C'Est Prêt", which no one writes, and the same
-    // rule turns "prêt-à-manger" into "Prêt-À-Manger". Leaving them inside the
-    // word gives "C'est prêt" and "Prêt-à-manger". The cost is a place name like
-    // "Côte-Nord" coming back as "Côte-nord" — rarer, and far less jarring.
-    //
-    // A digit does open a word, which is what keeps "6X355" from becoming
-    // "6x355".
+    // Word by word. One already carrying a lower-case letter is left exactly as
+    // it is — that is how "mL" survives — and a unit is lowered whatever it
+    // looked like.
     wxString out;
     out.reserve(name.length());
 
-    bool insideWord = false;
+    wxString current;
+
+    auto flush = [&out, &current]
+    {
+        if (current.empty())
+            return;
+
+        if (isUnit(current))
+        {
+            out += current.Lower();
+        }
+        else if (!allUpper(current))
+        {
+            out += current;                    // written properly already
+        }
+        else
+        {
+            bool first = true;
+            for (const wxUniChar c : current)
+            {
+                out += (first && hasCase(c)) ? raised(c) : lowered(c);
+                if (hasCase(c))
+                    first = false;
+            }
+        }
+
+        current.clear();
+    };
 
     for (const wxUniChar c : name)
     {
-        const bool letter = hasCase(c);
         const bool joiner = (c == wxUniChar('\'')
-                          || c == wxUniChar(0x2019)   // apostrophe typographique
+                          || c == wxUniChar(0x2019)
                           || c == wxUniChar('-'));
 
-        if (!letter)
+        if (hasCase(c) || (joiner && !current.empty()))
         {
-            out += c;
-
-            // A joiner keeps the word going; anything else ends it.
-            insideWord = insideWord && joiner;
+            current += c;
             continue;
         }
 
-        out += insideWord ? lowered(c) : raised(c);
-        insideWord = true;
+        flush();
+        out += c;
     }
 
+    flush();
     return out;
 }
 
