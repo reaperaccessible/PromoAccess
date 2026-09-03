@@ -32,8 +32,16 @@ FavoriteDialog::FavoriteDialog(wxWindow* parent,
     const int border = FromDIP(8);
 
     // --- Words to watch -------------------------------------------------------
+    // The rule lives in the label, not in a paragraph of its own.
+    //
+    // A free-standing explanation is read when the window OPENS, before the user
+    // has reached anything — so opening this dialog began with two sentences of
+    // theory about matching. In a label it is said when the focus lands on the
+    // field it describes, which is the moment it is useful, and it is one
+    // clause rather than a lecture.
     auto* patternLabel = new wxStaticText(this, wxID_ANY,
-        loc::tr("Words to look for:", "Mots à rechercher :"));
+        loc::tr("Words to look for, all of them must appear:",
+                "Mots à rechercher, tous doivent apparaître :"));
     root->Add(patternLabel, 0, wxLEFT | wxRIGHT | wxTOP, border);
 
     patternCtrl_ = new wxTextCtrl(this, wxID_ANY, wxString::FromUTF8(favorite_.pattern));
@@ -41,11 +49,6 @@ FavoriteDialog::FavoriteDialog(wxWindow* parent,
     // is for sighted users and for the ones that do pick it up.
     patternCtrl_->SetName(loc::tr("Words to look for", "Mots à rechercher"));
     root->Add(patternCtrl_, 0, wxEXPAND | wxLEFT | wxRIGHT, border);
-
-    auto* hint = new wxStaticText(this, wxID_ANY,
-        loc::tr("Every word must appear. Accents are ignored.",
-                "Tous les mots doivent apparaître. Les accents sont ignorés."));
-    root->Add(hint, 0, wxLEFT | wxRIGHT | wxBOTTOM, border);
 
     // --- Banner ---------------------------------------------------------------
     auto* merchantLabel = new wxStaticText(this, wxID_ANY,
@@ -100,17 +103,18 @@ FavoriteDialog::FavoriteDialog(wxWindow* parent,
     root->Add(maxPriceCtrl_, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, border);
 
     // --- How the words are matched --------------------------------------------
+    // The example is IN the checkbox, so it is spoken when the box is reached
+    // and nowhere else. One example beats a definition: "ail" and "ailes" is the
+    // exact case this option exists for.
+    //
+    // No quotation marks around the words: a screen reader announces them, and
+    // "guillemet ail guillemet" is two words of noise around the one that
+    // carries the meaning.
     wholeWordsCtrl_ = new wxCheckBox(this, wxID_ANY,
-        loc::tr("Whole words only", "Mots entiers seulement"));
+        loc::tr("Whole words only, ham does not find hamburger",
+                "Mots entiers seulement, ail ne trouve pas ailes"));
     wholeWordsCtrl_->SetValue(favorite_.wholeWords);
     root->Add(wholeWordsCtrl_, 0, wxLEFT | wxRIGHT, border);
-
-    auto* wordsHint = new wxStaticText(this, wxID_ANY,
-        loc::tr("On: garlic finds garlic, and not chicken wings. "
-                "Off: a fragment is found anywhere, so fromag finds fromage.",
-                "Coché : « ail » trouve l'ail, et pas les ailes de poulet. "
-                "Décoché : un fragment est trouvé partout, « fromag » trouve fromage."));
-    root->Add(wordsHint, 0, wxLEFT | wxRIGHT | wxBOTTOM, border);
 
     // --- Active ---------------------------------------------------------------
     // "Actif", masculine: it qualifies "un favori". The dialog is headed
