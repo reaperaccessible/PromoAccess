@@ -195,6 +195,15 @@ static void runOfflineChecks()
     checkEqual(fmt::itemName("FRAMBOISES | RASPBERRIES, 170 G").utf8_string(),
                "Framboises, 170 g", "itemName rescues a size left on the other side");
 
+    // The decimal comma is not a separator. The rescue used to anchor on the
+    // comma inside "1,7" and hand back ",7 kg" — a sixteen-dollar chicken
+    // suddenly seven kilograms lighter. And the SHOUT question is answered by
+    // the product's own half, so the lower-case suffix cannot veto its recasing.
+    checkEqual(fmt::itemName("POULET ENTIER MAPLE LEAF PRIME | WHOLE CHICKEN,"
+                             " jusqu'à/up to 1,7 kg").utf8_string(),
+               "Poulet Entier Maple Leaf Prime, jusqu'à/up to 1,7 kg",
+               "a decimal comma does not truncate the rescued size");
+
     checkEqual(fmt::itemName("jus de pomme Selection").utf8_string(),
                "Jus de pomme Selection", "itemName starts a single-language name high");
 

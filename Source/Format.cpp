@@ -77,7 +77,25 @@ namespace
     // four banners, and a digit after the last comma is what they all share.
     size_t trailingSize(const std::string& s)
     {
-        const size_t comma = s.rfind(',');
+        // Walking the commas from the right. One flanked by digits is a decimal
+        // mark, not a separator: "WHOLE CHICKEN, jusqu'a/up to 1,7 kg" anchored
+        // on the comma of "1,7" and the rescued suffix came out as ",7 kg" — a
+        // chicken sold at 16 $ suddenly weighed seven kilograms less.
+        size_t comma = s.rfind(',');
+
+        while (comma != std::string::npos)
+        {
+            const bool decimal =
+                comma > 0 && comma + 1 < s.size()
+                && std::isdigit(static_cast<unsigned char>(s[comma - 1]))
+                && std::isdigit(static_cast<unsigned char>(s[comma + 1]));
+
+            if (!decimal)
+                break;
+
+            comma = (comma == 0) ? std::string::npos : s.rfind(',', comma - 1);
+        }
+
         if (comma == std::string::npos)
             return std::string::npos;
 
@@ -201,6 +219,8 @@ namespace
     // feta Irrésistible", and a product name is a title, not the middle of a
     // sentence. A name that begins with a digit or a sign is left whole: "500 g
     // de beurre" must not become "500 G de beurre".
+    wxString recaseWords(const wxString& name);
+
     wxString sentenceStart(const wxString& name)
     {
         if (name.empty())
@@ -217,31 +237,46 @@ namespace
     }
 }
 
-wxString properCase(const wxString& name)
+namespace
 {
     // Does this name SHOUT?
     //
-    // Asked of the words of three letters or more, and of them only. The first
-    // rule looked for a single lower-case letter anywhere, and "MAYONNAISE MAG,
-    // 890 mL" therefore escaped untouched: the banner had shouted the product
-    // and written the unit correctly. Short words are exactly where the
-    // exceptions live — units, sigles — so they get no vote.
-    bool anyLongWord = false;
-
-    for (const wxString& word : words(name))
+    // Asked of the words of three letters or more, and of them only: short
+    // words are exactly where the exceptions live — units, sigles — so they
+    // get no vote. "MAYONNAISE MAG, 890 mL" shouts; "fromage feta
+    // Irrésistible" does not.
+    bool shouts(const wxString& name)
     {
-        if (word.length() < 3)
-            continue;
+        bool anyLongWord = false;
 
-        anyLongWord = true;
+        for (const wxString& word : words(name))
+        {
+            if (word.length() < 3)
+                continue;
 
-        if (!allUpper(word))
-            return sentenceStart(name);   // mixed case: the banner meant it
+            anyLongWord = true;
+
+            if (!allUpper(word))
+                return false;   // mixed case: the banner meant it
+        }
+
+        return anyLongWord;
     }
+}
 
-    if (!anyLongWord)
+wxString properCase(const wxString& name)
+{
+    if (!shouts(name))
         return sentenceStart(name);
 
+    return recaseWords(name);
+}
+
+namespace
+{
+
+wxString recaseWords(const wxString& name)
+{
     // Word by word. One already carrying a lower-case letter is left exactly as
     // it is — that is how "mL" survives — and a unit is lowered whatever it
     // looked like.
@@ -297,6 +332,8 @@ wxString properCase(const wxString& name)
     return out;
 }
 
+}   // namespace
+
 wxString itemName(const std::string& rawName)
 {
     const size_t bar = rawName.find('|');
@@ -315,6 +352,15 @@ wxString itemName(const std::string& rawName)
     const std::string& other = loc::isFrench() ? english : french;
 
     // Carry over the format when it was only written on the other side.
+    //
+    // The SHOUT question is answered by the product's own half, BEFORE the
+    // rescued suffix joins it. The suffix is prose from the feed — "jusqu'à/up
+    // to 1,7 kg" — and its lower-case words would have vetoed the recasing of
+    // a fully capitalised name, leaving "POULET ENTIER MAPLE LEAF PRIME,
+    // jusqu'à 1,7 kg" half shouted, half not. The word-by-word pass is safe on
+    // the suffix itself: words already carrying lower case are left alone.
+    const bool shouted = shouts(u8(kept));
+
     if (trailingSize(kept) == std::string::npos)
     {
         const size_t size = trailingSize(other);
@@ -322,7 +368,7 @@ wxString itemName(const std::string& rawName)
             kept += other.substr(size);
     }
 
-    return properCase(u8(kept));
+    return shouted ? recaseWords(u8(kept)) : sentenceStart(u8(kept));
 }
 
 wxString itemDetail(const model::Item& item)
