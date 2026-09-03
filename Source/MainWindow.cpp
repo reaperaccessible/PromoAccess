@@ -214,7 +214,28 @@ namespace
     class ReadOnlyField : public wxTextCtrl
     {
     public:
-        using wxTextCtrl::wxTextCtrl;
+        ReadOnlyField(wxWindow* parent, wxWindowID id,
+                      const wxString& value = wxEmptyString,
+                      const wxPoint& pos = wxDefaultPosition,
+                      const wxSize& size = wxDefaultSize,
+                      long style = 0)
+            : wxTextCtrl(parent, id, value, pos, size, style | wxTE_READONLY)
+        {
+            // Windows selects the whole content of an edit field reached with
+            // Tab, and a screen reader then says "selected" before the value —
+            // a word that means nothing here, since there is nothing to cut,
+            // copy or replace in a field you cannot type into.
+            //
+            // Undone after the default handler rather than instead of it:
+            // the selection is made by that handler, so clearing it first would
+            // clear nothing.
+            Bind(wxEVT_SET_FOCUS, [this](wxFocusEvent& e)
+            {
+                e.Skip();
+                CallAfter([this] { SetSelection(0, 0); });
+            });
+        }
+
         bool AcceptsFocusFromKeyboard() const override { return true; }
     };
 
@@ -820,10 +841,19 @@ wxPanel* MainWindow::buildListPage(wxNotebook* book)
     addColumn(shoppingList_, loc::tr("Valid until", "Valide jusqu'au"), FromDIP(160));
     sizer->Add(shoppingList_, 1, wxEXPAND | wxLEFT | wxRIGHT, border);
 
-    addLabel(page, sizer, loc::tr("Total:", "Total :"));
+    // An EMPTY label, and deliberately so. On Windows a control takes its
+    // announced name from the static text in front of it, so removing the label
+    // outright would not leave the field nameless — it would let the list's own
+    // label leak onto it, and the reader would say "Shopping list" over the
+    // total. An empty one holds the place and says nothing.
+    //
+    // Nothing is lost: the value reads "3 items, estimated total 16.86 $",
+    // which already says what it is. A caption saying "Total:" in front of it
+    // was one more word before every reading of a line that is read often.
+    sizer->Add(new wxStaticText(page, wxID_ANY, wxEmptyString), 0, wxLEFT | wxRIGHT, border);
+
     listTotal_ = new ReadOnlyField(page, wxID_ANY, wxEmptyString,
-                                   wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-    listTotal_->SetName(loc::tr("Total", "Total"));
+                                   wxDefaultPosition, wxDefaultSize);
     sizer->Add(listTotal_, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, border);
 
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
@@ -2348,12 +2378,22 @@ void MainWindow::reloadList()
 
     restoreSelection(shoppingList_, wasSelected);
 
-    // Articles counted, not lines. Two tins of the same thing are two articles
-    // on one line, and a field that answered "1" while the total charged for two
-    // is the field that made the total look wrong.
-    listTotal_->ChangeValue(wxString::Format("%s%d, %s%d, %s%s",
-        loc::tr("Items: ", "Articles : "), items,
-        loc::tr("lines: ", "lignes : "), static_cast<int>(listEntries_.size()),
+    // Articles counted, not rows. Two tins of the same thing are two articles on
+    // one row, and a field that answered "1" while the total charged for two is
+    // the field that made the total look wrong.
+    //
+    // The row count is gone. It described how the data is laid out on screen,
+    // not the shopping — and anyone can hear how many rows there are by walking
+    // them. A word nobody asked for, in a line that is read many times a trip.
+    if (listEntries_.empty())
+    {
+        listTotal_->ChangeValue(loc::tr("Empty list.", "Liste vide."));
+        return;
+    }
+
+    listTotal_->ChangeValue(wxString::Format("%d %s, %s%s",
+        items,
+        items == 1 ? loc::tr("item", "article") : loc::tr("items", "articles"),
         loc::tr("estimated total ", "total estimé "), fmt::money(total)));
 }
 
