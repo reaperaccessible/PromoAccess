@@ -27,6 +27,13 @@
   #define BinDir SourceDir + "\build\Release"
 #endif
 
+; Windows wants four numbers where we display two: 1.01 -> 1.0.1.0. Passed in
+; rather than derived, because "1.01" cannot be split into a quad by the
+; preprocessor without pretending the minor is not two digits.
+#ifndef MyAppVersionQuad
+  #define MyAppVersionQuad "1.0.1.0"
+#endif
+
 #ifndef OutputDir
   #define OutputDir "Output"
 #endif
@@ -66,7 +73,7 @@ UninstallDisplayName={#MyAppName}
 
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoProductName={#MyAppName}
-VersionInfoVersion=1.0.0.0
+VersionInfoVersion={#MyAppVersionQuad}
 VersionInfoDescription={#MyAppName} Setup
 
 ; Upgrading while the program is running would silently fail to replace the
