@@ -358,6 +358,13 @@ removes it, with a confirmation.</p>
   <dd>Untick to pause a favorite without deleting it.</dd>
 </dl>
 
+<h3>The banner</h3>
+
+<p>A <em>Banner</em> dropdown sits just before the items found. Pick a store,
+then <kbd>Tab</kbd>: the list shows only its items. "All banners" brings
+everything back. Only stores that actually have something appear, and the
+choice is remembered between sessions.</p>
+
 <h3>On sale right now</h3>
 
 <p>Everything the active favorites matched this week, without duplicates.
@@ -409,11 +416,23 @@ one line. Estimated, because an item advertised as
 worth and the arithmetic behind it: “$13.98 (2 x $6.99)”. The total can then be
 checked line by line.</p>
 
+<h3>The banner</h3>
+
+<p>As in the favorites, a <em>Banner</em> dropdown comes before the list. Pick a
+store and <kbd>Tab</kbd>: you see only what to buy there, and <strong>the total
+follows</strong> — "IGA: 6 items, estimated total 29.83 $". That is what will be
+spent in that store, not the whole week's shopping.</p>
+
 <h3>Export — <kbd>Ctrl+S</kbd></h3>
 
 <p>Writes the list to a file. Three formats are offered: plain text, CSV for a
-spreadsheet, and Markdown. The file lands in your PromoAccess folder and its full
-path is announced.</p>
+spreadsheet, and Markdown.</p>
+
+<p>In text, PromoAccess writes <strong>one file per banner</strong>:
+"list - IGA.txt", "list - Maxi.txt" and so on, beside the name you gave. One
+file per store is one file per trip. The export always holds the whole list,
+whatever banner is showing on screen. CSV and Markdown stay a single file: a
+spreadsheet wants one table.</p>
 
 <h2 id="sorting">8. Sorting the items</h2>
 

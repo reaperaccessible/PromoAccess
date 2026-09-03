@@ -25,6 +25,7 @@
 #include <wx/msgdlg.h>
 #include <wx/progdlg.h>
 #include <wx/filedlg.h>
+#include <wx/filename.h>
 #include <wx/accel.h>
 #include <wx/dialog.h>
 #include <wx/utils.h>
@@ -124,6 +125,8 @@ namespace
     const char* kSettingPriceless = "hide_priceless";
     const char* kSettingSort      = "sort_order";
     const char* kSettingUpdates   = "check_updates";
+    const char* kSettingMatchBan  = "match_merchant";
+    const char* kSettingListBan   = "list_merchant";
 
     // Dropdown order, matching db::Week.
     wxChoice* makeWeekChoice(wxWindow* parent)
@@ -779,6 +782,23 @@ wxPanel* MainWindow::buildFavoritesPage(wxNotebook* book)
     sortChoices_[2] = makeSortChoice(page);
     sizer->Add(sortChoices_[2], 0, wxEXPAND | wxLEFT | wxRIGHT, border);
 
+    // The banner comes immediately before the items it filters, so Tab reads as
+    // a sentence: this store, then what it has.
+    addLabel(page, sizer, loc::tr("Banner:", "Bannière :"));
+    matchMerchant_ = new wxChoice(page, wxID_ANY);
+    matchMerchant_->SetName(loc::tr("Banner", "Bannière"));
+    sizer->Add(matchMerchant_, 0, wxEXPAND | wxLEFT | wxRIGHT, border);
+
+    matchMerchant_->Bind(wxEVT_CHOICE, [this](wxCommandEvent& e)
+    {
+        const wxString chosen = e.GetSelection() <= 0
+            ? wxString()
+            : matchMerchant_->GetString(static_cast<unsigned>(e.GetSelection()));
+
+        db_.setSetting(kSettingMatchBan, chosen.utf8_string());
+        applyMatchFilter();
+    });
+
     addLabel(page, sizer, loc::tr("On sale right now:", "En rabais en ce moment :"));
     favoriteMatchList_ = makeList(page, loc::tr("Matches", "Articles trouvés"));
     addColumn(favoriteMatchList_, loc::tr("Item", "Article"), FromDIP(360));
@@ -831,6 +851,24 @@ wxPanel* MainWindow::buildListPage(wxNotebook* book)
     auto* page = new wxPanel(book);
     auto* sizer = new wxBoxSizer(wxVERTICAL);
     const int border = FromDIP(6);
+
+    addLabel(page, sizer, loc::tr("Banner:", "Bannière :"));
+    listMerchant_ = new wxChoice(page, wxID_ANY);
+    listMerchant_->SetName(loc::tr("Banner", "Bannière"));
+    sizer->Add(listMerchant_, 0, wxEXPAND | wxLEFT | wxRIGHT, border);
+
+    listMerchant_->Bind(wxEVT_CHOICE, [this](wxCommandEvent& e)
+    {
+        const wxString chosen = e.GetSelection() <= 0
+            ? wxString()
+            : listMerchant_->GetString(static_cast<unsigned>(e.GetSelection()));
+
+        db_.setSetting(kSettingListBan, chosen.utf8_string());
+        reloadList();
+
+        // Spoken after the banner the reader is already saying, like the sort.
+        announce(listTotal_->GetValue(), 500);
+    });
 
     primaryLabels_[PageList] = addLabel(page, sizer, loc::tr("Shopping list:", "Liste d'épicerie :"));
     shoppingList_ = makeList(page, loc::tr("Shopping list", "Liste d'épicerie"));
@@ -1517,6 +1555,40 @@ void MainWindow::applySort(int selection)
     // question in.
     if (shown != nullptr)
         announce(sortSummary(*shown), 500);
+}
+
+wxString MainWindow::fillMerchantFilter(wxChoice* choice,
+                                       const std::vector<wxString>& present,
+                                       const char* setting)
+{
+    if (choice == nullptr)
+        return {};
+
+    const wxString wanted = u8(db_.setting(setting));
+
+    // Rebuilt from what is actually there rather than from the followed
+    // banners: walking past four empty stores to reach the one you are standing
+    // in is exactly the kind of trip this filter exists to remove.
+    choice->Clear();
+    choice->Append(loc::tr("All banners", "Toutes les bannières"));
+
+    int selection = 0;
+    for (size_t n = 0; n < present.size(); ++n)
+    {
+        choice->Append(present[n]);
+
+        if (present[n] == wanted)
+            selection = static_cast<int>(n) + 1;
+    }
+
+    // SetSelection emits no event, so restoring the choice cannot bounce back
+    // into the handler that saved it.
+    choice->SetSelection(selection);
+
+    // The saved banner may have gone — its flyer expired, or it stopped being
+    // followed. The filter then falls back to everything rather than showing an
+    // empty list with no way to tell why.
+    return selection == 0 ? wxString() : present[static_cast<size_t>(selection - 1)];
 }
 
 void MainWindow::syncWeekChoices()
@@ -2296,6 +2368,31 @@ void MainWindow::reloadFavorites()
     reloadFavoriteMatches();
 }
 
+void MainWindow::applyMatchFilter()
+{
+    std::vector<wxString> present;
+    for (const model::Item& item : favoriteMatchesAll_)
+    {
+        const wxString name = u8(item.merchantName);
+        if (!name.empty()
+            && std::find(present.begin(), present.end(), name) == present.end())
+        {
+            present.push_back(name);
+        }
+    }
+
+    std::sort(present.begin(), present.end());
+
+    const wxString chosen = fillMerchantFilter(matchMerchant_, present, kSettingMatchBan);
+
+    favoriteMatches_.clear();
+    for (const model::Item& item : favoriteMatchesAll_)
+        if (chosen.empty() || u8(item.merchantName) == chosen)
+            favoriteMatches_.push_back(item);
+
+    fillItemList(favoriteMatchList_, favoriteMatches_);
+}
+
 void MainWindow::reloadFavoriteMatches()
 {
     favoriteMatches_.clear();
@@ -2337,13 +2434,18 @@ void MainWindow::reloadFavoriteMatches()
                      });
     sortItems(favoriteMatches_);
 
-    fillItemList(favoriteMatchList_, favoriteMatches_);
+    // Everything found, kept aside: the dropdown is built from it, and the list
+    // shows the chosen banner's share of it.
+    favoriteMatchesAll_ = favoriteMatches_;
+    applyMatchFilter();
 
     // Favourites are the short list the user actually watches, so their original
     // prices are fetched without being asked for. Bounded: a loose pattern can
-    // match hundreds of items, and this is one request each.
+    // match hundreds of items, and this is one request each. Asked of everything
+    // found, not of what is on screen — the price is wanted whichever banner is
+    // showing.
     int queued = 0;
-    for (const model::Item& item : favoriteMatches_)
+    for (const model::Item& item : favoriteMatchesAll_)
     {
         if (!needsDetail(item) || queued >= 40)
             continue;
@@ -2355,7 +2457,29 @@ void MainWindow::reloadFavoriteMatches()
 
 void MainWindow::reloadList()
 {
-    listEntries_ = db_.listEntries();
+    listEntriesAll_ = db_.listEntries();
+
+    // The banners actually on the list, in order, so the dropdown never offers a
+    // store with nothing in it.
+    std::vector<wxString> present;
+    for (const model::ListEntry& e : listEntriesAll_)
+    {
+        const wxString name = u8(e.merchantName);
+        if (!name.empty()
+            && std::find(present.begin(), present.end(), name) == present.end())
+        {
+            present.push_back(name);
+        }
+    }
+
+    std::sort(present.begin(), present.end());
+
+    const wxString chosen = fillMerchantFilter(listMerchant_, present, kSettingListBan);
+
+    listEntries_.clear();
+    for (const model::ListEntry& e : listEntriesAll_)
+        if (chosen.empty() || u8(e.merchantName) == chosen)
+            listEntries_.push_back(e);
 
     const long wasSelected = selectedRow(shoppingList_);
     shoppingList_->DeleteAllItems();
@@ -2391,12 +2515,20 @@ void MainWindow::reloadList()
     // them. A word nobody asked for, in a line that is read many times a trip.
     if (listEntries_.empty())
     {
-        listTotal_->ChangeValue(loc::tr("Empty list.", "Liste vide."));
+        listTotal_->ChangeValue(listEntriesAll_.empty()
+            ? loc::tr("Empty list.", "Liste vide.")
+            : loc::tr("Nothing on the list for this banner.",
+                      "Rien sur la liste pour cette bannière."));
         return;
     }
 
-    listTotal_->ChangeValue(wxString::Format("%d %s, %s%s",
-        items,
+    // The total follows the filter, and names the banner it belongs to. That is
+    // the point of filtering at all: standing in one store, what matters is what
+    // will be spent in THAT store, not the whole week's shopping.
+    const wxString banner = chosen.empty() ? wxString() : chosen + " : ";
+
+    listTotal_->ChangeValue(wxString::Format("%s%d %s, %s%s",
+        banner, items,
         items == 1 ? loc::tr("item", "article") : loc::tr("items", "articles"),
         loc::tr("estimated total ", "total estimé "), fmt::money(total)));
 }
@@ -2664,7 +2796,10 @@ void MainWindow::focusLanguageSetting()
 
 void MainWindow::exportList()
 {
-    if (listEntries_.empty())
+    // Everything, whatever banner is showing. A file per store is the point of
+    // the text export, and exporting only the store on screen would quietly
+    // produce a list missing the rest of the week.
+    if (listEntriesAll_.empty())
     {
         announce(loc::tr("The list is empty.", "La liste est vide."));
         return;
@@ -2682,13 +2817,91 @@ void MainWindow::exportList()
         return;
 
     const wxString path = dialog.GetPath();
+    const exporter::Format format = exporter::formatForPath(path);
 
-    wxString error;
-    if (exporter::write(path, exporter::formatForPath(path), listEntries_, error))
-        announce(loc::tr("List saved.", "Liste enregistrée."));
-    else
-        wxMessageBox(error, GetTitle(), wxOK | wxICON_ERROR, this);
+    // Markdown and CSV stay one file. A spreadsheet wants one table, and a
+    // Markdown list is read on a screen where scrolling costs nothing; it is the
+    // text file that gets carried into a store, one store at a time.
+    if (format != exporter::Format::Text)
+    {
+        wxString error;
+        if (exporter::write(path, format, listEntriesAll_, error))
+            announce(loc::tr("List saved.", "Liste enregistrée."));
+        else
+            wxMessageBox(error, GetTitle(), wxOK | wxICON_ERROR, this);
+
+        return;
+    }
+
+    // --- one text file per banner -------------------------------------------
+    std::vector<wxString> banners;
+    for (const model::ListEntry& e : listEntriesAll_)
+    {
+        const wxString name = u8(e.merchantName);
+        if (std::find(banners.begin(), banners.end(), name) == banners.end())
+            banners.push_back(name);
+    }
+
+    std::sort(banners.begin(), banners.end());
+
+    wxFileName base(path);
+    const wxString stem = base.GetName();
+
+    int written = 0;
+    wxString firstError;
+
+    for (const wxString& banner : banners)
+    {
+        std::vector<model::ListEntry> ofBanner;
+        for (const model::ListEntry& e : listEntriesAll_)
+            if (u8(e.merchantName) == banner)
+                ofBanner.push_back(e);
+
+        if (ofBanner.empty())
+            continue;
+
+        // A banner name is not a file name: a slash or a colon in one would
+        // send the file somewhere else entirely, or fail to open at all.
+        wxString safe = banner.empty() ? loc::tr("no banner", "sans bannière") : banner;
+        for (const wxString& forbidden : { "\\", "/", ":", "*", "?", "\"", "<", ">", "|" })
+            safe.Replace(forbidden, "-");
+
+        wxFileName target(base);
+        target.SetName(stem + " - " + safe);
+
+        wxString error;
+        if (exporter::write(target.GetFullPath(), exporter::Format::Text, ofBanner, error))
+        {
+            ++written;
+        }
+        else if (firstError.empty())
+        {
+            firstError = error;
+        }
+    }
+
+    if (written == 0)
+    {
+        wxMessageBox(firstError.empty()
+                         ? loc::tr("The list could not be saved.",
+                                   "La liste n'a pas pu être enregistrée.")
+                         : firstError,
+                     GetTitle(), wxOK | wxICON_ERROR, this);
+        return;
+    }
+
+    // The count is the useful part: it says how many stores the trip covers, and
+    // confirms a file was made for each of them.
+    announce(wxString::Format(
+        written == 1 ? loc::tr("One file saved, in %s.", "Un fichier enregistré, dans %s.")
+                     : loc::tr("%d files saved, one per banner, in %s.",
+                               "%d fichiers enregistrés, un par bannière, dans %s."),
+        written, base.GetPath()));
+
+    if (!firstError.empty())
+        wxMessageBox(firstError, GetTitle(), wxOK | wxICON_WARNING, this);
 }
+
 
 //==============================================================================
 // Events

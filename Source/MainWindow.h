@@ -184,6 +184,17 @@ private:
     void applyWeek(int selection);
     void syncWeekChoices();
 
+    // Fills a banner dropdown from the banners actually present, keeps the saved
+    // choice when that banner is still there, and returns the chosen name —
+    // empty for "every banner".
+    // Rebuilds the banner dropdown of the favourites tab and narrows the list
+    // to the chosen one.
+    void applyMatchFilter();
+
+    wxString fillMerchantFilter(wxChoice* choice,
+                                const std::vector<wxString>& present,
+                                const char* setting);
+
     // How the three item lists are ordered.
     //
     // One setting for the whole window rather than one per tab: the same
@@ -267,8 +278,17 @@ private:
     std::vector<model::Item>     flyerItems_;
     std::vector<model::Item>     searchResults_;
     std::vector<model::Favorite> favorites_;
+    // What is on screen, and everything there is. The lists show one banner at a
+    // time when a banner is chosen, and every command works on the rows the user
+    // can actually reach — so the displayed vector is the one the rows index
+    // into, and the full one only feeds the dropdown.
     std::vector<model::Item>     favoriteMatches_;
+    std::vector<model::Item>     favoriteMatchesAll_;
     std::vector<model::ListEntry> listEntries_;
+    std::vector<model::ListEntry> listEntriesAll_;
+
+    wxChoice*     matchMerchant_   = nullptr;
+    wxChoice*     listMerchant_    = nullptr;
 
     wxNotebook*   book_            = nullptr;
 
