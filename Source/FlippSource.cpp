@@ -225,6 +225,54 @@ namespace
     bool cancelled(const CancelFn& fn) { return fn && fn(); }
 }
 
+void liftWeightRate(model::Item& item)
+{
+    if (!item.priceText.empty() || item.description.empty())
+        return;
+
+    // Line by line: Walmart writes the rate on a line of its own.
+    std::string rest;
+    std::string lifted;
+
+    size_t start = 0;
+    while (start <= item.description.size())
+    {
+        size_t end = item.description.find('\n', start);
+        if (end == std::string::npos)
+            end = item.description.size();
+
+        std::string t = item.description.substr(start, end - start);
+        start = end + 1;
+
+        while (!t.empty() && (t.front() == ' ' || t.front() == '\r')) t.erase(0, 1);
+        while (!t.empty() && (t.back() == ' ' || t.back() == '\r'))  t.pop_back();
+
+        const bool perWeight = t.find("/kg") != std::string::npos
+                            || t.find("/lb") != std::string::npos;
+        const bool hasDigit  = t.find_first_of("0123456789") != std::string::npos;
+
+        // Short, weighted and numbered — a rate, not a sentence that happens to
+        // mention kilograms. Taken once; a second such line stays where it is.
+        if (lifted.empty() && perWeight && hasDigit && t.size() <= 40)
+        {
+            lifted = t;
+            continue;
+        }
+
+        if (!t.empty())
+        {
+            if (!rest.empty()) rest += '\n';
+            rest += t;
+        }
+    }
+
+    if (lifted.empty())
+        return;
+
+    item.priceText   = lifted;
+    item.description = rest;
+}
+
 std::string stripTracking(const std::string& url)
 {
     std::string current;
@@ -415,6 +463,9 @@ Result FlippSource::fetchItemDetail(long long itemId,
     if (itemInOut.currentPrice == 0.0)  itemInOut.currentPrice  = price(j, "current_price");
     if (itemInOut.originalPrice == 0.0) itemInOut.originalPrice = price(j, "original_price");
     if (itemInOut.priceText.empty())    itemInOut.priceText     = priceLine(j);
+
+    // Some banners hide the unit in prose — see liftWeightRate.
+    liftWeightRate(itemInOut);
 
     // Most banners publish the saving rather than the former price: this feed
     // routinely carries dollars_off with no original_price at all. The two say

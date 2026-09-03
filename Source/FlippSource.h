@@ -27,6 +27,16 @@ namespace source
 // Exposed rather than file-local so the regression tests can reach it.
 std::string stripTracking(const std::string& url);
 
+// Moves a per-weight rate out of the description and into the price text.
+//
+// Walmart states the unit nowhere near the price fields: price_text, pre and
+// post all arrive empty, and the description reads "Poulet canadien à 100 %.
+// N° 50724280. 7,98 $/kg" — so 3,62 $ was announced as the price of a whole
+// chicken when it is its price per pound. The banner's own words are lifted,
+// verbatim, never invented: a line is taken only when it carries "/kg" or
+// "/lb" next to a digit, which "moins de 2 kg" does not.
+void liftWeightRate(model::Item& item);
+
 
 class FlippSource final : public IFlyerSource
 {

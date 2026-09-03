@@ -212,6 +212,33 @@ static void runOfflineChecks()
         check(fmt::savings(item).empty(), "savings is silent with no original price");
     }
 
+    // --- The per-weight rate hidden in prose ----------------------------------
+    // Walmart states the unit nowhere near the price fields: the description
+    // reads "Poulet canadien à 100 %.\n\n° 50724280.\n7,98 $/kg" and every price
+    // text field arrives empty. The rate is lifted out, verbatim; a sentence
+    // that merely mentions kilograms is not.
+    {
+        model::Item chicken;
+        chicken.currentPrice = 3.62;
+        chicken.description  = "Poulet canadien à 100 %.\nN° 50724280.\n7,98 $/kg";
+        source::liftWeightRate(chicken);
+        checkEqual(chicken.priceText, "7,98 $/kg", "the per-kg rate moves to the price");
+        checkEqual(chicken.description, "Poulet canadien à 100 %.\nN° 50724280.",
+                   "and leaves the description");
+
+        model::Item packaged;
+        packaged.description = "Cat. «A», moins de 2 kg";
+        source::liftWeightRate(packaged);
+        check(packaged.priceText.empty(), "a mention of kilograms is not a rate");
+
+        model::Item already;
+        already.priceText   = "/lb - 9,90$/kg";
+        already.description = "7,98 $/kg";
+        source::liftWeightRate(already);
+        checkEqual(already.priceText, "/lb - 9,90$/kg",
+                   "a unit already stated is never overwritten");
+    }
+
     // --- Product links -------------------------------------------------------
     // Two of the four banners wrap their product page in a DoubleClick
     // click-through, and Super C wraps it twice. Opening the raw string would
