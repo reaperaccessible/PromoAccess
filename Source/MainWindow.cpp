@@ -2510,13 +2510,39 @@ void MainWindow::runSearch(bool moveFocus)
 
 void MainWindow::addToList(const model::Item& item)
 {
+    const wxString shown = fmt::itemName(item.name);
+
+    // Asked before anything is written. Two of the same tin is the normal case
+    // at a grocery, and making the user add the line and then go hunting for the
+    // Quantity button on another tab is a trip nobody should have to make.
+    const long wanted = askQuantity(shown, 1);
+    if (wanted <= 0)
+        return;   // cancelled, or not a number — askQuantity has already said so
+
     model::ListEntry entry;
-    entry.name         = fmt::itemName(item.name).utf8_string();
+    entry.name         = shown.utf8_string();
     entry.merchantName = item.merchantName;
     entry.price        = item.currentPrice;
     entry.priceText    = item.priceText.empty() ? item.saleStory : item.priceText;
-    entry.quantity     = 1;
+    entry.quantity     = static_cast<int>(wanted);
     entry.validTo      = item.validTo;
+
+    // The same product added again raises the line it is already on. Adding it
+    // twice used to make two identical rows, which read as a duplicate to
+    // anyone walking the list and totalled correctly only by accident.
+    const model::ListEntry existing =
+        db_.findListEntry(entry.name, entry.merchantName, entry.price);
+
+    if (existing.id != 0)
+    {
+        const int total = std::min(existing.quantity + entry.quantity, 99);
+        db_.setListQuantity(existing.id, total);
+        reloadList();
+
+        announce(wxString::Format(loc::tr("%s, quantity now %d.", "%s, quantité portée à %d."),
+                                  shown, total));
+        return;
+    }
 
     db_.addListEntry(entry);
     reloadList();
@@ -2524,7 +2550,8 @@ void MainWindow::addToList(const model::Item& item)
     // Through the same formatting the row used: announcing the raw feed string
     // would read the bar aloud and then the English half, so the confirmation
     // would not match the line it confirms.
-    announce(loc::tr("Added: ", "Ajouté : ") + fmt::itemName(item.name));
+    announce(wxString::Format(loc::tr("Added: %s, quantity %d.", "Ajouté : %s, quantité %d."),
+                              shown, static_cast<int>(wanted)));
 }
 
 void MainWindow::addSelectedToList(wxListCtrl* list, const std::vector<model::Item>& items)

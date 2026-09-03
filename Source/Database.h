@@ -135,6 +135,15 @@ public:
     void      removeListEntry(long long id);
     void      clearList();
     void      setListQuantity(long long id, int quantity);
+
+    // The line already holding this product, or an empty entry when there is
+    // none. Matched on name, banner AND price, not on name alone: a banner
+    // advertises the same product twice in one week at two prices — a format,
+    // a variety, a members-only deal — and folding those into one line would
+    // total the wrong amount and hide a choice the user was making.
+    model::ListEntry findListEntry(const std::string& name,
+                                   const std::string& merchantName,
+                                   double price) const;
     void      setListChecked(long long id, bool checked);
     std::vector<model::ListEntry> listEntries() const;
 

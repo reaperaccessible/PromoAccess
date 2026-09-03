@@ -458,6 +458,41 @@ int main(int argc, char** argv)
         check(zero == 0, "an unstated discount is stored as -1, never as 0");
     }
 
+    // --- The shopping list merges a repeat ------------------------------------
+    // Adding the same product twice must raise the line it is already on. It
+    // used to make a second identical row, which reads as a duplicate to
+    // anyone walking the list with a screen reader.
+    {
+        database.clearList();
+
+        model::ListEntry e;
+        e.name         = "CAFE SELECTION";
+        e.merchantName = "Super C";
+        e.price        = 6.99;
+        e.quantity     = 1;
+        database.addListEntry(e);
+
+        const model::ListEntry again =
+            database.findListEntry(e.name, e.merchantName, e.price);
+        check(again.id != 0, "the same product is found on the list");
+        check(again.quantity == 1, "and it is found with its quantity");
+
+        database.setListQuantity(again.id, again.quantity + 2);
+        check(database.listEntries().size() == 1,
+              "a repeat raises the line instead of making a second one");
+        check(database.listEntries()[0].quantity == 3,
+              "and the quantity is the sum");
+
+        // Same name and banner, different price: a banner advertises one
+        // product twice a week at two prices, and those are two decisions.
+        check(database.findListEntry(e.name, e.merchantName, 4.99).id == 0,
+              "a different price is a different line");
+        check(database.findListEntry(e.name, "Metro", e.price).id == 0,
+              "a different banner is a different line");
+
+        database.clearList();
+    }
+
     // --- Search ---------------------------------------------------------------
     // Non-empty results are asserted, not merely printed. A silently failing
     // statement — the ambiguous-column bug, a missing migration — shows up here

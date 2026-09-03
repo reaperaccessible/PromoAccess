@@ -935,6 +935,40 @@ std::vector<model::Favorite> Database::favorites() const
 //==============================================================================
 // Shopping list
 //==============================================================================
+model::ListEntry Database::findListEntry(const std::string& name,
+                                        const std::string& merchantName,
+                                        double price) const
+{
+    model::ListEntry found;
+
+    Stmt s(handle_,
+           "SELECT id, name, merchant_name, price, price_text, quantity, valid_to, checked "
+           "FROM list_entries "
+           "WHERE name = ?1 AND merchant_name = ?2 AND ABS(price - ?3) < 0.005 "
+           "LIMIT 1");
+    if (!s) return found;
+
+    s.bind(1, name);
+    s.bind(2, merchantName);
+    s.bind(3, price);
+
+    // ABS(...) rather than "=": prices are stored as doubles, and 1.99 read
+    // back from two different paths is not always the same bit pattern.
+    if (s.step())
+    {
+        found.id           = s.i64(0);
+        found.name         = s.text(1);
+        found.merchantName = s.text(2);
+        found.price        = s.real(3);
+        found.priceText    = s.text(4);
+        found.quantity     = s.i32(5);
+        found.validTo      = s.text(6);
+        found.checked      = s.i32(7) != 0;
+    }
+
+    return found;
+}
+
 long long Database::addListEntry(const model::ListEntry& entry)
 {
     Stmt s(handle_,
