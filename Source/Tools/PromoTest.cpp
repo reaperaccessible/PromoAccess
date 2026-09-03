@@ -271,7 +271,12 @@ static void runOfflineChecks()
     {
         const wxString old = paths::dataFolder()
                            + wxFileName::GetPathSeparator() + "promotest-old.db";
-        wxRemoveFile(old);
+
+        // Only when there is one: wxRemoveFile logs an error of its own for a
+        // file that was never there, and that noise lands in the middle of the
+        // results.
+        if (wxFileName::FileExists(old))
+            wxRemoveFile(old);
 
         sqlite3* raw = nullptr;
         if (sqlite3_open_v2(old.utf8_string().c_str(), &raw,
@@ -519,6 +524,42 @@ int main(int argc, char** argv)
         e.priceText = "2 pour 5$";
         e.quantity  = 3;
         check(fmt::lineTotal(e) == fmt::price(e), "an item with no number is left alone");
+    }
+
+    // --- Expired lines ---------------------------------------------------------
+    // The list is a snapshot: nothing ever refreshes a line, so a deal that
+    // ended keeps its old price for ever. It has to be visible, and removable.
+    {
+        database.clearList();
+
+        model::ListEntry live;
+        live.name = "EN COURS"; live.merchantName = "IGA"; live.price = 3.00;
+        live.quantity = 1; live.validTo = "2099-12-31";
+        database.addListEntry(live);
+
+        model::ListEntry old_;
+        old_.name = "TERMINE"; old_.merchantName = "IGA"; old_.price = 9.00;
+        old_.quantity = 2; old_.validTo = "2020-01-01";
+        database.addListEntry(old_);
+
+        model::ListEntry undated;
+        undated.name = "SANS DATE"; undated.merchantName = "Metro"; undated.price = 1.00;
+        undated.quantity = 1;
+        database.addListEntry(undated);
+
+        check(fmt::isExpired("2020-01-01"), "a past date is expired");
+        check(!fmt::isExpired("2099-12-31"), "a future one is not");
+        check(!fmt::isExpired(""), "and no date at all is never expired");
+
+        const int removed = database.removeExpiredListEntries();
+        checkEqual(std::to_string(removed), "1", "only the expired line is removed");
+        checkEqual(std::to_string(database.listEntries().size()), "2",
+                   "the live line and the undated one stay");
+
+        checkEqual(std::to_string(database.removeExpiredListEntries()), "0",
+                   "removing again removes nothing");
+
+        database.clearList();
     }
 
     // --- The shopping list merges a repeat ------------------------------------

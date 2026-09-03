@@ -103,6 +103,7 @@ namespace
         ID_ADD_TO_LIST,
         ID_FAVORITE_NEW, ID_FAVORITE_EDIT, ID_FAVORITE_DELETE, ID_FAVORITE_FROM_ITEM,
         ID_LIST_REMOVE, ID_LIST_CLEAR, ID_LIST_QUANTITY, ID_LIST_EXPORT,
+        ID_LIST_PURGE,
         ID_DETAIL, ID_PRODUCT_PAGE,
         ID_TAB_1, ID_TAB_2, ID_TAB_3, ID_TAB_4, ID_TAB_5,
         ID_MERCHANT_TOGGLE, ID_HELP
@@ -909,10 +910,13 @@ wxPanel* MainWindow::buildListPage(wxNotebook* book)
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
     auto* quantity = new wxButton(page, ID_LIST_QUANTITY, loc::tr("Quantity", "Quantité"));
     auto* remove   = new wxButton(page, ID_LIST_REMOVE, loc::tr("Remove", "Retirer"));
+    auto* purge    = new wxButton(page, ID_LIST_PURGE,
+                                  loc::tr("Remove expired", "Retirer les expirés"));
     auto* clear    = new wxButton(page, ID_LIST_CLEAR, loc::tr("Clear list", "Vider la liste"));
     auto* save     = new wxButton(page, ID_LIST_EXPORT, loc::tr("Save to file", "Enregistrer"));
     buttons->Add(quantity, 0, wxRIGHT, border);
     buttons->Add(remove, 0, wxRIGHT, border);
+    buttons->Add(purge, 0, wxRIGHT, border);
     buttons->Add(clear, 0, wxRIGHT, border);
     buttons->Add(save, 0);
     sizer->Add(buttons, 0, wxALL, border);
@@ -1391,6 +1395,37 @@ void MainWindow::buildAccelerators()
         reloadList();
         announce(loc::tr("List cleared.", "Liste vidée."));
     }, ID_LIST_CLEAR);
+
+    Bind(wxEVT_BUTTON, [this](wxCommandEvent&)
+    {
+        int expired = 0;
+        for (const model::ListEntry& e : listEntriesAll_)
+            if (fmt::isExpired(e.validTo))
+                expired += 1;
+
+        if (expired == 0)
+        {
+            announce(loc::tr("No expired item on the list.",
+                             "Aucun article expiré dans la liste."));
+            return;
+        }
+
+        // Confirmed, unlike removing one line: several lines go at once, and a
+        // product whose deal ended may still be something the user means to buy
+        // at full price.
+        if (!confirm(wxString::Format(
+                loc::tr("Remove %d expired item(s) from the list?",
+                        "Retirer %d article(s) expiré(s) de la liste ?"), expired)))
+        {
+            return;
+        }
+
+        const int removed = db_.removeExpiredListEntries();
+        reloadList();
+
+        announce(wxString::Format(loc::tr("%d removed.", "%d retiré(s)."), removed));
+        shoppingList_->SetFocus();
+    }, ID_LIST_PURGE);
 }
 
 //==============================================================================
@@ -2518,6 +2553,7 @@ void MainWindow::reloadList()
     shoppingList_->DeleteAllItems();
     double total = 0.0;
     int    items = 0;
+    int    expired = 0;
 
     for (size_t n = 0; n < listEntries_.size(); ++n)
     {
@@ -2532,6 +2568,15 @@ void MainWindow::reloadList()
         shoppingList_->SetItem(row, 2, fmt::lineTotal(e));
         shoppingList_->SetItem(row, 3, u8(e.merchantName));
         shoppingList_->SetItem(row, 4, fmt::validityDate(e.validTo));
+
+        // An expired line keeps its old price for reference, but it is no longer
+        // money that will be spent: counting it made the estimate quietly wrong
+        // once a week rolled over.
+        if (fmt::isExpired(e.validTo))
+        {
+            expired += e.quantity;
+            continue;
+        }
 
         total += e.price * e.quantity;
         items += e.quantity;
@@ -2560,10 +2605,22 @@ void MainWindow::reloadList()
     // will be spent in THAT store, not the whole week's shopping.
     const wxString banner = chosen.empty() ? wxString() : chosen + " : ";
 
-    listTotal_->ChangeValue(wxString::Format("%s%d %s, %s%s",
+    wxString value = wxString::Format("%s%d %s, %s%s",
         banner, items,
         items == 1 ? loc::tr("item", "article") : loc::tr("items", "articles"),
-        loc::tr("estimated total ", "total estimé "), fmt::money(total)));
+        loc::tr("estimated total ", "total estimé "), fmt::money(total));
+
+    // Said only when there is something to say. A line about expired items on
+    // every reading of a list that has none is a word the user pays for weekly
+    // and never needs.
+    if (expired > 0)
+    {
+        const wxString word = (expired == 1) ? loc::tr("expired", "expiré")
+                                             : loc::tr("expired", "expirés");
+        value += wxString::Format(", %d %s", expired, word);
+    }
+
+    listTotal_->ChangeValue(value);
 }
 
 //==============================================================================

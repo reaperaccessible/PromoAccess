@@ -558,6 +558,13 @@ wxString price(const model::ListEntry& entry)
     return loc::tr("no price listed", "prix non indiqué");
 }
 
+bool isExpired(const std::string& validTo)
+{
+    // ISO dates compare correctly as text, which is why they are stored that
+    // way: no parsing, no time zone, no ambiguity about 03/09.
+    return !validTo.empty() && validTo < db::today();
+}
+
 wxString validity(const std::string& validTo)
 {
     if (validTo.empty())

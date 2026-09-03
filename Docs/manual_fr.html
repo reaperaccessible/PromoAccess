@@ -424,11 +424,28 @@ et ce sont alors deux décisions différentes, donc deux lignes.</p>
   <dd>Un bouton, avec une confirmation.</dd>
 </dl>
 
+<h3>Les articles expirés</h3>
+
+<p>La liste est une photographie : au moment où vous ajoutez un article,
+PromoAccess copie son nom, sa bannière, son prix et la date de fin du rabais.
+<strong>Rien ne met ensuite ce prix à jour.</strong> L'article de la circulaire
+n'est même pas relié à votre ligne, et il ne pourrait pas l'être : les
+identifiants changent chaque semaine.</p>
+
+<p>Quand la semaine se termine, la colonne <em>Valide jusqu'au</em> dit
+<em>expiré</em> au lieu d'une date, et ces lignes <strong>ne comptent plus dans
+le total</strong> — ce n'est plus de l'argent qui sera dépensé. Le champ sous la
+liste dit alors « 9 articles, total estimé 46,70 $, 2 expirés ».</p>
+
+<p>Le bouton <em>Retirer les expirés</em> les enlève d'un coup, après
+confirmation. Rien ne les supprime tout seul : un rabais terminé ne veut pas
+dire que vous ne voulez plus du produit.</p>
+
 <h3>Total</h3>
 
 <p>Sous la liste, un champ en lecture seule que <kbd>Tab</kbd> atteint. Il donne
-le nombre d'articles et le total estimé — deux boîtes du même produit comptent
-pour deux articles, sur une seule ligne. Estimé, parce
+le nombre d'articles encore valides et leur total estimé — deux boîtes du même
+produit comptent pour deux articles, sur une seule ligne. Estimé, parce
 qu'un article annoncé « 2 pour 5 $ » ne porte aucun prix unitaire et compte pour
 zéro.</p>
 

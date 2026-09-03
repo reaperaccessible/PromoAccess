@@ -42,6 +42,10 @@ namespace fmt
     // that nothing is missing.
     wxString validityDate(const std::string& validTo);
 
+    // True when the deal ended before today. An entry with no date is never
+    // expired: the banner did not say, and we do not decide for it.
+    bool isExpired(const std::string& validTo);
+
     // A monetary total, e.g. "48,35 $".
     wxString money(double amount);
 

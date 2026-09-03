@@ -997,6 +997,36 @@ void Database::removeListEntry(long long id)
     s.run();
 }
 
+int Database::removeExpiredListEntries()
+{
+    // Counted before deleting: sqlite3_changes would do, but counting first
+    // keeps the number right even if a future version deletes in several steps.
+    int count = 0;
+
+    Stmt tally(handle_,
+               "SELECT COUNT(*) FROM list_entries "
+               "WHERE valid_to IS NOT NULL AND valid_to <> '' AND valid_to < ?1");
+    if (tally)
+    {
+        tally.bind(1, today());
+        if (tally.step())
+            count = tally.i32(0);
+    }
+
+    if (count == 0)
+        return 0;
+
+    Stmt s(handle_,
+           "DELETE FROM list_entries "
+           "WHERE valid_to IS NOT NULL AND valid_to <> '' AND valid_to < ?1");
+    if (!s) return 0;
+
+    s.bind(1, today());
+    s.run();
+
+    return count;
+}
+
 void Database::clearList()
 {
     exec("DELETE FROM list_entries");

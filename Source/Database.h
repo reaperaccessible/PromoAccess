@@ -134,6 +134,11 @@ public:
     long long addListEntry(const model::ListEntry& entry);
     void      removeListEntry(long long id);
     void      clearList();
+
+    // Removes the lines whose deal has ended, and says how many went. The list
+    // is a snapshot: nothing else ever expires it, so this is the only way a
+    // line from three weeks ago leaves.
+    int       removeExpiredListEntries();
     void      setListQuantity(long long id, int quantity);
 
     // The line already holding this product, or an empty entry when there is
