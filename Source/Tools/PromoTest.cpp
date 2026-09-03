@@ -19,6 +19,8 @@
 #include "Postal.h"
 #include "Format.h"
 #include "Http.h"
+#include "Updater.h"
+#include "Version.h"
 
 #include "sqlite3.h"
 
@@ -284,6 +286,19 @@ static void runOfflineChecks()
         wxRemoveFile(old);
     }
 
+    // --- Version comparison ---------------------------------------------------
+    // The two-digit minor scheme is the trap: "1.10" must beat "1.9", and a
+    // string compare would say the opposite.
+    check(updater::isNewer("1.01", "1.00"),  "1.01 is newer than 1.00");
+    check(updater::isNewer("1.10", "1.09"),  "1.10 is newer than 1.09");
+    check(updater::isNewer("1.10", "1.9"),   "1.10 is newer than 1.9");
+    check(updater::isNewer("2.00", "1.99"),  "2.00 is newer than 1.99");
+    check(!updater::isNewer("1.00", "1.00"), "the same version is not newer");
+    check(!updater::isNewer("1.00", "1.01"), "an older version is not newer");
+    check(!updater::isNewer("1.00", "1"),    "1.00 and 1 are the same version");
+    check(updater::isNewer("v1.01", "1.00"), "a leading v is ignored");
+    check(!updater::isNewer("", "1.00"),     "an empty tag is never newer");
+
     // --- Export --------------------------------------------------------------
     {
         std::vector<model::ListEntry> entries;
@@ -530,6 +545,24 @@ int main(int argc, char** argv)
                 }
             }
         }
+    }
+
+    // --- Update check ---------------------------------------------------------
+    // The real GitHub call, with the real parser. It must reach the service,
+    // read a version out of the newest release and find a Windows installer to
+    // download; the shape of that reply is not ours to control.
+    {
+        const updater::Info info = updater::check();
+
+        check(info.error.empty(), "the update check reaches GitHub");
+        if (!info.error.empty())
+            std::printf("      %s\n", info.error.utf8_string().c_str());
+
+        check(!info.latestVersion.empty(), "the newest release names a version");
+        check(!info.installerUrl.empty(),  "the newest release carries an installer");
+        std::printf("      published %s, running %s, update offered: %s\n",
+                    info.latestVersion.c_str(), PROMO_VERSION_STR,
+                    info.available ? "yes" : "no");
     }
 
     // --- Live search ----------------------------------------------------------

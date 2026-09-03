@@ -48,7 +48,6 @@ OutputDir={#OutputDir}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-LicenseFile={#SourceDir}\LICENSE
 
 ; Program Files needs administrator rights, but a user without them can still
 ; install into their own profile rather than being turned away.
@@ -77,10 +76,20 @@ CloseApplications=yes
 RestartApplications=no
 
 [Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "french"; MessagesFile: "compiler:Languages\French.isl"
+; One licence page per language. The GPL has no official translation — only the
+; English text is binding — so the French page says so plainly and explains the
+; terms, while LICENSE, the text that governs, is installed with the program.
+Name: "english"; MessagesFile: "compiler:Default.isl"; LicenseFile: "{#SourceDir}\LICENSE"
+Name: "french"; MessagesFile: "compiler:Languages\French.isl"; LicenseFile: "{#SourceDir}\Docs\LICENCE-fr.txt"
 
 [CustomMessages]
+; Inno's own CreateDesktopIcon carries an "&" accelerator — "Créer une icône sur
+; le &Bureau". The tasks list draws its text raw, so the ampersand is READ OUT,
+; which is exactly what a screen-reader user does not need. Overridden here
+; without it, in both languages.
+english.CreateDesktopIcon=Create a desktop shortcut
+french.CreateDesktopIcon=Créer une icône sur le Bureau
+
 english.AppDesc=Quebec grocery flyers, readable with a screen reader
 english.ManualName=PromoAccess manual
 french.AppDesc=Les circulaires d'épicerie du Québec, accessibles au lecteur d'écran
@@ -101,6 +110,11 @@ Source: "{#SourceDir}\Docs\manual_en.html"; DestDir: "{app}\Docs"; Flags: ignore
 
 Source: "{#SourceDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
+; The marker the in-app updater looks for. Its absence means this copy was
+; unpacked by hand, and the updater then leaves it alone rather than moving the
+; program somewhere the user did not choose.
+Source: "{#BinDir}\{#MyAppExeName}"; DestDir: "{app}"; AfterInstall: CreateInstalledMarker; Flags: ignoreversion
+
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Comment: "{cm:AppDesc}"
 Name: "{group}\{cm:ManualName}"; Filename: "{app}\Docs\manual_fr.html"; Languages: french
@@ -111,9 +125,31 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 
+; The in-app updater runs this installer as "/SILENT /AUTOUPDATE=1", which skips
+; the checkbox above. This entry fires only on that path and puts the program
+; back up even in silent mode — as the original, non-elevated user, and with
+; /fromupdate so the new instance pulls itself to the foreground and the screen
+; reader lands in it rather than behind the installer.
+Filename: "{app}\{#MyAppExeName}"; Parameters: "/fromupdate"; Flags: nowait runasoriginaluser; Check: IsAutoUpdate
+
 [UninstallDelete]
 ; Docs is written by Setup, so Setup removes it. Nothing else is created inside
 ; {app}: the cache, the favourites and the shopping list live in the user's
 ; profile and are deliberately left alone, so reinstalling does not throw away a
 ; year of favourites.
 Type: filesandordirs; Name: "{app}\Docs"
+Type: files; Name: "{app}\installed.txt"
+
+[Code]
+// Written after the executable is in place. The updater reads nothing but its
+// presence.
+procedure CreateInstalledMarker();
+begin
+  SaveStringToFile(ExpandConstant('{app}\installed.txt'), 'Installed via setup', False);
+end;
+
+// True when the in-app updater launched us with /AUTOUPDATE=1.
+function IsAutoUpdate(): Boolean;
+begin
+  Result := ExpandConstant('{param:AUTOUPDATE|0}') = '1';
+end;

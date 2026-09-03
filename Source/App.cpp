@@ -7,6 +7,8 @@
 
 #include <wx/uilocale.h>
 
+#include <windows.h>
+
 wxIMPLEMENT_APP(PromoApp);
 
 bool PromoApp::OnInit()
@@ -44,6 +46,22 @@ bool PromoApp::OnInit()
     auto* frame = new MainWindow(PROMO_WINDOW_TITLE);
     frame->Show(true);
     SetTopWindow(frame);
+
+    // Relaunched by the installer at the end of an automatic update. Windows
+    // gives a process started by another one no right to the foreground, so the
+    // window would come up behind the installer's last screen and the screen
+    // reader would be reading something the user is no longer in. Asked for
+    // explicitly here, and only on that path.
+    for (int n = 1; n < argc; ++n)
+    {
+        if (wxString(argv[n]).Lower() != "/fromupdate")
+            continue;
+
+        frame->Raise();
+        ::SetForegroundWindow(frame->GetHWND() ? static_cast<HWND>(frame->GetHWND()) : nullptr);
+        frame->SetFocus();
+        break;
+    }
 
     return true;
 }

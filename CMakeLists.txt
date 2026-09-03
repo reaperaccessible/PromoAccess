@@ -49,6 +49,7 @@ add_library(promo_core STATIC
     Source/FlippSource.cpp
     Source/Format.cpp
     Source/Export.cpp
+    Source/Updater.cpp
 )
 target_include_directories(promo_core PUBLIC Source)
 target_link_libraries(promo_core PUBLIC

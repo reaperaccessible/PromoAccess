@@ -111,7 +111,8 @@ void Canceller::release()
     }
 }
 
-GetResult getToString(const wxString& url, std::string& out, Canceller* canceller)
+GetResult getToString(const wxString& url, std::string& out, Canceller* canceller,
+                      Progress progress)
 {
     out.clear();
     GetResult res;
@@ -212,6 +213,22 @@ GetResult getToString(const wxString& url, std::string& out, Canceller* cancelle
         return res;
     }
 
+    // Content-Length, when the server sends one. A download with no total is
+    // still reported, just without a percentage — which is what the progress
+    // dialog falls back to.
+    size_t total = 0;
+    if (progress)
+    {
+        DWORD length = 0, lengthSize = sizeof(length);
+        if (WinHttpQueryHeaders(request,
+                                WINHTTP_QUERY_CONTENT_LENGTH | WINHTTP_QUERY_FLAG_NUMBER,
+                                WINHTTP_HEADER_NAME_BY_INDEX, &length, &lengthSize,
+                                WINHTTP_NO_HEADER_INDEX))
+        {
+            total = length;
+        }
+    }
+
     DWORD avail = 0;
     do
     {
@@ -222,6 +239,9 @@ GetResult getToString(const wxString& url, std::string& out, Canceller* cancelle
         DWORD got = 0;
         if (!WinHttpReadData(request, buf.data(), avail, &got)) { res.error = lastError("Read failed"); return res; }
         out.append(buf.data(), got);
+
+        if (progress)
+            progress(out.size(), total);
     }
     while (avail > 0);
 

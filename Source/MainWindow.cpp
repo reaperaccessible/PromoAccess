@@ -4,6 +4,7 @@
 #include "Export.h"
 #include "Localization.h"
 #include "Paths.h"
+#include "Updater.h"
 #include "FlippSource.h"
 #include "Http.h"
 #include "Locality.h"
@@ -22,12 +23,14 @@
 #include <wx/stattext.h>
 #include <wx/sizer.h>
 #include <wx/msgdlg.h>
+#include <wx/progdlg.h>
 #include <wx/filedlg.h>
 #include <wx/accel.h>
 #include <wx/dialog.h>
 #include <wx/utils.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <set>
 
@@ -120,6 +123,7 @@ namespace
     const char* kNormRevision     = "3";
     const char* kSettingPriceless = "hide_priceless";
     const char* kSettingSort      = "sort_order";
+    const char* kSettingUpdates   = "check_updates";
 
     // Dropdown order, matching db::Week.
     wxChoice* makeWeekChoice(wxWindow* parent)
@@ -328,6 +332,17 @@ MainWindow::MainWindow(const wxString& title)
         pendingAnnounce_.clear();
     });
 
+    // Three seconds after the window is up, exactly as MediaAccess does it: the
+    // first moments belong to the screen reader announcing the window, and a
+    // dialog that lands in the middle of that is a dialog nobody heard open.
+    updateCheckTimer_.Bind(wxEVT_TIMER, [this](wxTimerEvent&)
+    {
+        startUpdateCheck(/*silent=*/true);
+    });
+
+    if (db_.setting(kSettingUpdates, "1") == "1")
+        updateCheckTimer_.StartOnce(3000);
+
     layoutReady_ = true;
 }
 
@@ -377,6 +392,9 @@ void MainWindow::clearTabNameOverrides()
 MainWindow::~MainWindow()
 {
     sync_.stop();
+
+    if (updateThread_.joinable())
+        updateThread_.join();
 
     if (localityThread_.joinable())
         localityThread_.join();
@@ -999,6 +1017,33 @@ wxPanel* MainWindow::buildSettingsPage(wxNotebook* book)
         announce(hide ? loc::tr("Items with no price hidden.", "Articles sans prix masqués.")
                       : loc::tr("Items with no price shown.", "Articles sans prix affichés."));
         refreshAllLists();
+    });
+
+    autoUpdate_ = new wxCheckBox(page, wxID_ANY,
+        loc::tr("Check for updates when PromoAccess starts",
+                "Vérifier les mises à jour au démarrage de PromoAccess"));
+    // On unless it was turned off: a program nobody can see the version of is a
+    // program that stays on an old version for years.
+    autoUpdate_->SetValue(db_.setting(kSettingUpdates, "1") == "1");
+    sizer->Add(autoUpdate_, 0, wxALL, border);
+
+    autoUpdate_->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&)
+    {
+        const bool on = autoUpdate_->GetValue();
+        db_.setSetting(kSettingUpdates, on ? "1" : "0");
+        announce(on ? loc::tr("Update check enabled.", "Vérification des mises à jour activée.")
+                    : loc::tr("Update check disabled.", "Vérification des mises à jour désactivée."));
+    });
+
+    auto* updateButton = new wxButton(page, wxID_ANY,
+        loc::tr("Check for updates now", "Vérifier les mises à jour maintenant"));
+    sizer->Add(updateButton, 0, wxLEFT | wxRIGHT | wxBOTTOM, border);
+
+    // Asked for on purpose, so it answers even when there is nothing new.
+    updateButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent&)
+    {
+        announce(loc::tr("Checking...", "Vérification..."));
+        startUpdateCheck(/*silent=*/false);
     });
 
     syncStatus_ = new wxStaticText(page, wxID_ANY,
@@ -1794,6 +1839,138 @@ void MainWindow::openProductPage(const std::string& url)
     {
         wxLaunchDefaultBrowser(target);
     });
+}
+
+void MainWindow::startUpdateCheck(bool silent)
+{
+    // One at a time. A second check while the first is in flight would race two
+    // dialogs onto the screen, and the user hears them fight.
+    if (updateInFlight_)
+        return;
+
+    updateInFlight_ = true;
+
+    if (updateThread_.joinable())
+        updateThread_.join();
+
+    updateThread_ = std::thread([this, silent]
+    {
+        const updater::Info info = updater::check();
+        CallAfter([this, info, silent] { onUpdateChecked(info, silent); });
+    });
+}
+
+void MainWindow::onUpdateChecked(const updater::Info& info, bool silent)
+{
+    updateInFlight_ = false;
+
+    if (!info.error.empty())
+    {
+        // Silence on start-up. No network on a laptop that has not joined the
+        // wifi yet is not an error worth interrupting anyone for.
+        if (!silent)
+            announce(info.error);
+
+        return;
+    }
+
+    if (!info.available)
+    {
+        if (!silent)
+            announce(loc::tr("PromoAccess is up to date.", "PromoAccess est à jour."));
+
+        return;
+    }
+
+    // A copy someone unpacked by hand is left where it is: running the installer
+    // would move the program somewhere they did not choose.
+    if (!updater::isInstalled())
+    {
+        if (!silent)
+        {
+            wxMessageBox(loc::tr("A newer version is available, but this copy was not installed "
+                                 "by the installer. Download it again from the website.",
+                                 "Une version plus récente existe, mais cette copie n'a pas été "
+                                 "posée par l'installeur. Téléchargez-la de nouveau depuis le site."),
+                         loc::tr("Update", "Mise à jour"), wxOK | wxICON_INFORMATION, this);
+        }
+
+        return;
+    }
+
+    wxString message = wxString::Format(
+        loc::tr("PromoAccess %s is available. You have %s.",
+                "PromoAccess %s est disponible. Vous avez la %s."),
+        wxString::FromUTF8(info.latestVersion),
+        wxString::FromUTF8(PROMO_VERSION_STR));
+
+    if (!info.releaseNotes.empty())
+        message += "\n\n" + wxString::FromUTF8(info.releaseNotes);
+
+    message += "\n\n"
+             + loc::tr("Install it now? PromoAccess will close and reopen itself.",
+                       "L'installer maintenant ? PromoAccess se fermera et se rouvrira.");
+
+    wxMessageDialog dialog(this, message,
+                           loc::tr("Update available", "Mise à jour disponible"),
+                           wxYES_NO | wxICON_QUESTION);
+    dialog.SetYesNoLabels(loc::tr("Install", "Installer"),
+                          loc::tr("Later", "Plus tard"));
+
+    if (dialog.ShowModal() == wxID_YES)
+        downloadAndApply(info);
+}
+
+void MainWindow::downloadAndApply(const updater::Info& info)
+{
+    // Determinate when the server announces a size, pulsing when it does not.
+    wxProgressDialog progress(loc::tr("Update", "Mise à jour"),
+                              loc::tr("Downloading the installer...",
+                                      "Téléchargement de l'installeur..."),
+                              100, this,
+                              wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+
+    std::atomic<bool> done{ false };
+    std::atomic<int>  percent{ -1 };
+    wxString path;
+
+    std::thread worker([&]
+    {
+        path = updater::download(info.installerUrl, [&](size_t got, size_t total)
+        {
+            percent = (total > 0) ? static_cast<int>((got * 100) / total) : -1;
+        });
+
+        done = true;
+    });
+
+    // The dialog only repaints, and only answers the screen reader, while the
+    // main loop runs — so the wait yields to it instead of blocking on join().
+    while (!done)
+    {
+        const int shown = percent.load();
+
+        if (shown >= 0)
+            progress.Update(std::min(shown, 99));
+        else
+            progress.Pulse();
+
+        wxYield();
+        wxMilliSleep(80);
+    }
+
+    worker.join();
+    progress.Update(100);
+
+    if (path.empty())
+    {
+        wxMessageBox(loc::tr("The installer could not be downloaded.",
+                             "L'installeur n'a pas pu être téléchargé."),
+                     loc::tr("Update", "Mise à jour"), wxOK | wxICON_ERROR, this);
+        return;
+    }
+
+    updater::apply(this, path);
 }
 
 void MainWindow::openManual()

@@ -1,0 +1,62 @@
+﻿PromoAccess — Licence publique générale GNU, version 3
+
+TRADUCTION NON OFFICIELLE, FOURNIE À TITRE D'INFORMATION
+
+La Free Software Foundation ne publie aucune traduction officielle de la
+licence GPL version 3 : seule la version anglaise a valeur juridique. Ce
+résumé est là pour que vous compreniez vos droits dans votre langue. Le
+texte anglais complet, celui qui fait foi, est installé avec le logiciel
+sous le nom LICENSE, et se lit aussi sur https://www.gnu.org/licenses/gpl-3.0.html
+
+Des traductions réalisées par la communauté sont recensées sur
+https://www.gnu.org/licenses/translations.html
+
+
+CE QUE CETTE LICENCE VOUS DONNE
+
+PromoAccess est un logiciel libre. Vous avez le droit :
+
+  - de l'utiliser, pour n'importe quel usage, sans rien payer et sans
+    demander la permission à qui que ce soit;
+
+  - d'étudier son fonctionnement et de le modifier, le code source étant
+    publié à l'adresse https://github.com/reaperaccessible/PromoAccess
+
+  - d'en redistribuer des copies, gratuitement ou non;
+
+  - de distribuer vos versions modifiées.
+
+
+CE QUE LA LICENCE VOUS DEMANDE EN RETOUR
+
+Si vous distribuez PromoAccess, modifié ou non, vous devez :
+
+  - fournir le code source, ou dire clairement où l'obtenir;
+
+  - conserver cette même licence GPL version 3 sur ce que vous
+    distribuez, pour que la personne suivante garde les mêmes libertés
+    que vous;
+
+  - indiquer les changements que vous avez faits;
+
+  - conserver les mentions de droit d'auteur et de licence existantes.
+
+
+ABSENCE DE GARANTIE
+
+Le programme est fourni tel quel, sans aucune garantie, dans la mesure
+permise par la loi applicable. Ni l'auteur ni les personnes qui le
+redistribuent ne peuvent être tenus responsables des dommages découlant
+de son utilisation.
+
+
+DONNÉES ET MARQUES DE TIERS
+
+Les données des circulaires proviennent de Flipp / Wishabi. Les noms de
+villes associés aux codes postaux proviennent des données postales
+GeoNames, utilisées sous licence Creative Commons Attribution 4.0. Les
+noms de produits, les prix et les images appartiennent aux bannières qui
+les publient, et ne sont pas couverts par la présente licence.
+
+
+Copyright (C) 2026 ReaperAccessible — https://reaperaccessible.fr

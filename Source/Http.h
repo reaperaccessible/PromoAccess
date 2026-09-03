@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wx/string.h>
+#include <functional>
 #include <mutex>
 #include <string>
 
@@ -80,8 +81,14 @@ namespace http
     // control characters, and a sane length.
     bool isSafeUrl(const std::string& url);
 
+    // Called as the body arrives, with the bytes received so far and the total
+    // announced by Content-Length — zero when the server does not announce one.
+    // Runs on the calling (worker) thread, so it must not touch the UI directly.
+    using Progress = std::function<void(size_t received, size_t total)>;
+
     // `canceller` may be null. When it is not, the request registers itself with
     // it and can be aborted from another thread.
     GetResult getToString(const wxString& url, std::string& out,
-                          Canceller* canceller = nullptr);
+                          Canceller* canceller = nullptr,
+                          Progress progress = nullptr);
 }

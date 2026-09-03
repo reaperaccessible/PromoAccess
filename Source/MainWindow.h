@@ -2,6 +2,7 @@
 
 #include "Database.h"
 #include "Model.h"
+#include "Updater.h"
 #include "Http.h"
 #include "SyncService.h"
 
@@ -143,6 +144,18 @@ private:
     // often arrive last. The proven remedy is to fold the tab name into the
     // control's accessible NAME for the duration of the switch, so there is one
     // announcement and it begins with the tab.
+    // --- Updates --------------------------------------------------------------
+    // Same flow as MediaAccess: silent at start-up, spoken only when there is
+    // something to say, and the installer does the replacing.
+    void startUpdateCheck(bool silent);
+    void onUpdateChecked(const updater::Info& info, bool silent);
+    void downloadAndApply(const updater::Info& info);
+
+    wxCheckBox*   autoUpdate_      = nullptr;
+    wxTimer       updateCheckTimer_;
+    std::thread   updateThread_;
+    bool          updateInFlight_  = false;
+
     // Opens the HTML manual of the current language in the default browser.
     void openManual();
 
