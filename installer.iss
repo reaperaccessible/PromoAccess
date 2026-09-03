@@ -14,7 +14,7 @@
 ; Version is passed on the command line: /DMyAppVersion=1.00
 ; Keep the two-digit minor — 1.00, 1.01 — as Source/Version.h explains.
 #ifndef MyAppVersion
-  #define MyAppVersion "1.02"
+  #define MyAppVersion "1.03"
 #endif
 
 ; Root of the source tree: /DSourceDir=path
@@ -31,7 +31,7 @@
 ; rather than derived, because "1.01" cannot be split into a quad by the
 ; preprocessor without pretending the minor is not two digits.
 #ifndef MyAppVersionQuad
-  #define MyAppVersionQuad "1.0.2.0"
+  #define MyAppVersionQuad "1.0.3.0"
 #endif
 
 #ifndef OutputDir
@@ -50,7 +50,11 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-OutputBaseFilename=PromoAccessInstaller_{#MyAppVersion}
+; The brand belongs in the filename: what people keep in their Downloads folder,
+; and what a screen reader spells out before they open it, should say who made
+; it. The version-less twin of this file is what the permanent download link and
+; the in-app updater both look for — see the note in Updater.cpp.
+OutputBaseFilename=ReaperAccessible-PromoAccess-Installer_{#MyAppVersion}
 OutputDir={#OutputDir}
 Compression=lzma2/max
 SolidCompression=yes

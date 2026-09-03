@@ -172,7 +172,12 @@ Info check()
             if (!isExe || !http::isSafeUrl(url))
                 continue;
 
-            if (name == "PromoAccessInstaller.exe")
+            // The version-less asset, which is also what the permanent download
+            // link serves. The former name is still accepted: a release could
+            // be built by an older script, and a client that finds nothing it
+            // recognises would silently stop offering updates.
+            if (name == "ReaperAccessible-PromoAccess-Installer.exe"
+                || name == "PromoAccessInstaller.exe")
             {
                 info.installerUrl = url;
                 break;
