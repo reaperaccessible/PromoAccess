@@ -5,11 +5,64 @@
 #include "Paths.h"
 #include "Version.h"
 
+#include <wx/cmdline.h>
 #include <wx/uilocale.h>
 
 #include <windows.h>
 
 wxIMPLEMENT_APP(PromoApp);
+
+void PromoApp::OnInitCmdLine(wxCmdLineParser& parser)
+{
+    wxApp::OnInitCmdLine(parser);
+
+    // Nothing on the command line may ever stop this program from opening.
+    //
+    // wxApp parses the command line before OnInit runs and refuses what it was
+    // not told about: the installer relaunches us with "/fromupdate" at the end
+    // of an automatic update, and wx answered "Unknown option 'fromupdate'" and
+    // quit — the update finished with the application never coming back.
+    //
+    // Declaring the switch is not enough. wx wants "--name" for a long option;
+    // with a single slash it reads the word as a cluster of short switches and
+    // refuses it just the same. So the slash stops being a switch character at
+    // all, and anything left over is swallowed as an optional parameter. The
+    // one flag we care about is then read from the raw arguments below.
+    //
+    // A slashed word and a bare path are therefore harmless now; an undeclared
+    // "--word" still stops the program, which is what a command line is
+    // supposed to do and is not a shape anything in this chain produces.
+    parser.SetSwitchChars("-");
+    parser.AddParam(wxEmptyString, wxCMD_LINE_VAL_STRING,
+                    wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_PARAM_MULTIPLE);
+
+    // And the dashed spelling as a real switch, so "--fromupdate" is understood
+    // too rather than becoming an undeclared long option, which is refused.
+    parser.AddSwitch(wxEmptyString, "fromupdate",
+                     "relaunched by the installer after an automatic update");
+}
+
+bool PromoApp::OnCmdLineParsed(wxCmdLineParser& parser)
+{
+    // Read from argv rather than from the parser, so every spelling the
+    // installer might use is understood: /fromupdate, -fromupdate, --fromupdate.
+    for (int n = 1; n < argc; ++n)
+    {
+        wxString arg(argv[n]);
+        arg.MakeLower();
+
+        while (!arg.empty() && (arg[0] == '/' || arg[0] == '-'))
+            arg.Remove(0, 1);
+
+        if (arg == "fromupdate")
+        {
+            fromUpdate_ = true;
+            break;
+        }
+    }
+
+    return wxApp::OnCmdLineParsed(parser);
+}
 
 bool PromoApp::OnInit()
 {
@@ -52,15 +105,14 @@ bool PromoApp::OnInit()
     // window would come up behind the installer's last screen and the screen
     // reader would be reading something the user is no longer in. Asked for
     // explicitly here, and only on that path.
-    for (int n = 1; n < argc; ++n)
+    if (fromUpdate_)
     {
-        if (wxString(argv[n]).Lower() != "/fromupdate")
-            continue;
-
         frame->Raise();
-        ::SetForegroundWindow(frame->GetHWND() ? static_cast<HWND>(frame->GetHWND()) : nullptr);
+
+        if (WXWidget handle = frame->GetHandle())
+            ::SetForegroundWindow(static_cast<HWND>(handle));
+
         frame->SetFocus();
-        break;
     }
 
     return true;

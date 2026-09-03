@@ -10,10 +10,10 @@
 // 1.00.
 
 #define PROMO_VERSION_MAJOR 1
-#define PROMO_VERSION_MINOR 1
+#define PROMO_VERSION_MINOR 2
 #define PROMO_VERSION_PATCH 0
 
-#define PROMO_VERSION_STR "1.01"
+#define PROMO_VERSION_STR "1.02"
 
 #define PROMO_APP_NAME    "PromoAccess"
 #define PROMO_PUBLISHER   "ReaperAccessible"

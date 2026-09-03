@@ -14,7 +14,7 @@
 ; Version is passed on the command line: /DMyAppVersion=1.00
 ; Keep the two-digit minor — 1.00, 1.01 — as Source/Version.h explains.
 #ifndef MyAppVersion
-  #define MyAppVersion "1.00"
+  #define MyAppVersion "1.02"
 #endif
 
 ; Root of the source tree: /DSourceDir=path
@@ -31,7 +31,7 @@
 ; rather than derived, because "1.01" cannot be split into a quad by the
 ; preprocessor without pretending the minor is not two digits.
 #ifndef MyAppVersionQuad
-  #define MyAppVersionQuad "1.0.1.0"
+  #define MyAppVersionQuad "1.0.2.0"
 #endif
 
 #ifndef OutputDir
