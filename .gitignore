@@ -1,0 +1,23 @@
+# Claude Code
+.claude/
+
+# Build outputs
+build/
+build_log/
+Output/
+*.exe
+*.obj
+*.lib
+*.exp
+*.pdb
+*.ilk
+*.iobj
+*.ipdb
+
+# SQLite databases (the cache is per user, never committed)
+*.db
+*.db-shm
+*.db-wal
+
+# Exported shopping lists, written next to the cache when testing
+list-export.*

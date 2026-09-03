@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PromoAccess Manual</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #555;
+    --accent: #0b5394;
+    --accent-bg: #e8f0fe;
+    --border: #cccccc;
+    --code-bg: #f4f4f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a;
+      --fg: #f0f0f0;
+      --muted: #b0b0b0;
+      --accent: #6fb1ff;
+      --accent-bg: #1f2d40;
+      --border: #444;
+      --code-bg: #2a2a2a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--fg);
+    background: var(--bg);
+    margin: 0;
+    padding: 0;
+  }
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    background: var(--accent);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    z-index: 100;
+  }
+  .skip:focus { left: 1rem; top: 1rem; }
+  header {
+    background: var(--accent-bg);
+    border-bottom: 2px solid var(--accent);
+    padding: 1.5rem 2rem;
+  }
+  header h1 { margin: 0 0 0.5rem 0; }
+  header p { margin: 0.25rem 0; color: var(--muted); }
+  .lang-switch a {
+    display: inline-block;
+    margin-left: 1rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  .lang-switch a:focus,
+  .lang-switch a:hover { outline: 3px solid var(--fg); }
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; padding: 1rem; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+  nav.toc {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    background: var(--accent-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+  }
+  nav.toc h2 { margin-top: 0; font-size: 1.1rem; }
+  nav.toc ol { padding-left: 1.5rem; margin: 0; }
+  nav.toc li { margin: 0.3rem 0; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover,
+  nav.toc a:focus { text-decoration: underline; outline: 2px solid var(--accent); }
+  main { min-width: 0; }
+  main h2 {
+    margin-top: 2.5rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--accent);
+    scroll-margin-top: 1rem;
+  }
+  main h3 { margin-top: 2rem; color: var(--accent); }
+  main p, main li { max-width: 70ch; }
+  main ul, main ol { padding-left: 1.5rem; }
+  dl { max-width: 70ch; }
+  dt { font-weight: bold; margin-top: 0.8rem; }
+  dd { margin: 0.2rem 0 0 1.5rem; }
+  kbd {
+    display: inline-block;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    padding: 0.1em 0.4em;
+    margin: 0 0.1em;
+    white-space: nowrap;
+  }
+  code {
+    font-family: "Cascadia Code", Consolas, monospace;
+    background: var(--code-bg);
+    padding: 0.15em 0.35em;
+    border-radius: 3px;
+    font-size: 0.92em;
+  }
+  .note {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-bg);
+    padding: 0.7rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+    max-width: 70ch;
+  }
+  .note strong { color: var(--accent); }
+  footer {
+    margin-top: 3rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    text-align: center;
+  }
+  a { color: var(--accent); }
+  a:focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main-content">Skip to main content</a>
+
+<header>
+  <h1>PromoAccess Manual</h1>
+  <p>Quebec grocery flyers, readable with a screen reader</p>
+  <p class="lang-switch">
+    <span lang="fr">Langue&nbsp;:</span>
+    <a href="manual_fr.html" lang="fr" hreflang="fr">Version française</a>
+  </p>
+</header>
+
+<div class="layout">
+
+<nav class="toc" aria-labelledby="toc-title">
+  <h2 id="toc-title">Table of contents</h2>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#first-steps">First steps</a></li>
+    <li><a href="#settings">Settings</a></li>
+    <li><a href="#flyers">Flyers</a></li>
+    <li><a href="#search">Search</a></li>
+    <li><a href="#favorites">Favorites</a></li>
+    <li><a href="#list">Shopping list</a></li>
+    <li><a href="#sorting">Sorting the items</a></li>
+    <li><a href="#details">Details of an item</a></li>
+    <li><a href="#shortcuts">Keyboard shortcuts</a></li>
+    <li><a href="#limits">What the banners provide</a></li>
+    <li><a href="#about">About</a></li>
+  </ol>
+</nav>
+
+<main id="main-content">
+
+<h2 id="overview">1. Overview</h2>
+
+<p>PromoAccess reads the weekly grocery flyers of Quebec banners and makes them
+readable with a screen reader.</p>
+
+<ul>
+  <li>Download the flyers of the banners you follow.</li>
+  <li>Search every flyer at once for a product.</li>
+  <li>Keep standing favorites, re-checked at every sync.</li>
+  <li>Build a shopping list and export it to a file.</li>
+</ul>
+
+<p>Everything is kept on your computer. Once a sync is done, browsing, searching
+and list building work without a connection.</p>
+
+<p>The whole application is reachable from the keyboard. <kbd>Tab</kbd> moves
+forward, <kbd>Shift+Tab</kbd> moves back, <kbd>Escape</kbd> closes a window. The
+five tabs are <kbd>Ctrl+1</kbd> to <kbd>Ctrl+5</kbd>, and the tab name is
+announced before the control the focus lands on.</p>
+
+<h2 id="first-steps">2. First steps</h2>
+
+<p>Three things to do once, in this order.</p>
+
+<h3>Your postal code</h3>
+
+<p>Press <kbd>Ctrl+1</kbd>. The focus lands on the postal code field. Type the
+six characters <strong>in one block, with no space</strong>: <code>J3P7S7</code>.
+Upper or lower case, it does not matter. Press <kbd>Enter</kbd>, or
+<kbd>F5</kbd>, to validate.</p>
+
+<p>Then press <kbd>Tab</kbd> once: a read-only field names the town found for
+that code. It is how you check you typed it right.</p>
+
+<h3>The banners you follow</h3>
+
+<p>Still in <kbd>Ctrl+1</kbd>, <kbd>Tab</kbd> down to the banner list. Space
+ticks and unticks. Ticking downloads that banner's flyers right away; unticking
+removes them from the cache. There is nothing else to confirm.</p>
+
+<h3>Sync</h3>
+
+<p><kbd>F5</kbd>, at any time, downloads the flyers of every followed banner.
+Once a week is enough, ideally Wednesday or Thursday when the new flyers come
+out.</p>
+
+<p>After that, <kbd>Ctrl+2</kbd> shows the flyers and <kbd>Ctrl+3</kbd> searches
+them.</p>
+
+<h2 id="settings">3. Settings — <kbd>Ctrl+1</kbd></h2>
+
+<p>The focus lands on the postal code field.</p>
+
+<dl>
+  <dt>Postal code</dt>
+  <dd>Six characters in one block. <kbd>Enter</kbd> or <kbd>F5</kbd> validates
+  and syncs.</dd>
+
+  <dt>Location</dt>
+  <dd>Read-only, one <kbd>Tab</kbd> away. Names the town for the code you
+  typed.</dd>
+
+  <dt>Banners to follow</dt>
+  <dd>Space ticks and unticks, and it takes effect immediately. Only followed
+  banners appear in the flyers, the search and the favorites.</dd>
+
+  <dt>Week</dt>
+  <dd>This week, next week, or both. Banners publish next week's flyer before
+  the current one expires, so both weeks are often in the cache at once. This
+  filter applies everywhere.</dd>
+
+  <dt>Hide items with no price</dt>
+  <dd>Some flyer entries are section headings or advertising panels with no
+  product behind them. Ticked, they are left out.</dd>
+
+  <dt>Language</dt>
+  <dd>French or English. The whole interface switches. Product names come from
+  the banners and stay as they wrote them.</dd>
+</dl>
+
+<h2 id="flyers">4. Flyers — <kbd>Ctrl+2</kbd></h2>
+
+<p>The focus lands on the flyer list. The tab order is: flyer list,
+<em>Sort by</em>, items of the chosen flyer, item details, then the buttons.</p>
+
+<h3>Flyer list</h3>
+
+<p>Banner, title, number of items, valid until. A banner often publishes several
+flyers at the same time: the main book, smaller inserts, and sometimes a separate
+prepared-meals book. That is what the title column is for. Choosing a flyer fills
+the item list below.</p>
+
+<h3>Items</h3>
+
+<p>Item, price, banner, valid until.</p>
+
+<ul>
+  <li><kbd>Enter</kbd> adds the selected item to the shopping list.</li>
+  <li><kbd>Ctrl+D</kbd> speaks the details of the selected item.</li>
+  <li><kbd>Ctrl+Shift+O</kbd> opens the product page in your browser, when the
+  banner provides one.</li>
+</ul>
+
+<p>The buttons on this tab: Add to list, Add to favorites, Details, Product
+page.</p>
+
+<h2 id="search">5. Search — <kbd>Ctrl+3</kbd></h2>
+
+<p>The focus lands on the search field. <kbd>Ctrl+F</kbd> gets there from
+anywhere. The search runs on the cache, never on the network: results are instant
+and work offline.</p>
+
+<h3>How the words are matched</h3>
+
+<ul>
+  <li>Every word you type must appear somewhere in the item.</li>
+  <li>Accents are ignored: <code>cereales</code> finds <code>CEREALES</code>.</li>
+  <li>Case is ignored.</li>
+  <li>A fragment counts: <code>fromag</code> finds <code>fromage</code>.</li>
+</ul>
+
+<h3>Filters</h3>
+
+<dl>
+  <dt>Banner</dt>
+  <dd>One banner, or all of them.</dd>
+
+  <dt>Week</dt>
+  <dd>This week, next week, both.</dd>
+
+  <dt>Maximum price</dt>
+  <dd>Leave it empty for any price. Items advertised without a number, such as
+  “2 for $5”, are kept: they can easily beat the ceiling.</dd>
+</dl>
+
+<p><kbd>Enter</kbd> in the search field, or the Search button, runs the search.
+The number of results is announced and the focus moves to the first one.</p>
+
+<h2 id="favorites">6. Favorites — <kbd>Ctrl+4</kbd></h2>
+
+<p>The focus lands on the favorites list.</p>
+
+<div class="note">
+  <p><strong>A favorite is a rule, not a pinned product.</strong> Flyer items get
+  brand new identifiers every week, so a favorite pointing at one would be dead
+  in seven days. What is stored is the words to look for, re-checked at every
+  sync.</p>
+</div>
+
+<p>The tab order is: favorites, <em>On sale right now</em>, item details,
+<em>Sort by</em>, New, Edit, Delete.</p>
+
+<h3>Creating one</h3>
+
+<p>The New button, or Add to favorites from any item in <kbd>Ctrl+2</kbd> or
+<kbd>Ctrl+3</kbd>. <kbd>Enter</kbd> on a favorite edits it. <kbd>Delete</kbd>
+removes it, with a confirmation.</p>
+
+<h3>In the favorite window</h3>
+
+<dl>
+  <dt>Words to look for</dt>
+  <dd>All of them must appear.</dd>
+
+  <dt>Banners</dt>
+  <dd>A checkbox list. Tick as many as you want; none ticked means every
+  banner.</dd>
+
+  <dt>Maximum price</dt>
+  <dd>Empty for any price.</dd>
+
+  <dt>Whole words only</dt>
+  <dd>Ticked, “ail” finds garlic and not chicken wings. Unticked, a fragment is
+  found anywhere, so “fromag” finds “fromage”. Ticked by default.</dd>
+
+  <dt>Active</dt>
+  <dd>Untick to pause a favorite without deleting it.</dd>
+</dl>
+
+<h3>On sale right now</h3>
+
+<p>Everything the active favorites matched this week, without duplicates.
+<kbd>Enter</kbd> adds an item to the shopping list. Original prices are fetched
+for these without being asked for.</p>
+
+<h2 id="list">7. Shopping list — <kbd>Ctrl+5</kbd></h2>
+
+<p>The focus lands on the list. Columns: item, quantity, price, banner, valid
+until.</p>
+
+<h3>Adding</h3>
+
+<p><kbd>Enter</kbd> on any item in <kbd>Ctrl+2</kbd>, <kbd>Ctrl+3</kbd> or
+<kbd>Ctrl+4</kbd>, or the Add to list button. Adding the same item twice raises
+its quantity instead of creating a second line.</p>
+
+<h3>Working on the list</h3>
+
+<dl>
+  <dt>Quantity</dt>
+  <dd>A button, which opens a small window with a number.</dd>
+
+  <dt>Remove</dt>
+  <dd>The <kbd>Delete</kbd> key, or the button. No confirmation: it is one line,
+  and adding it back is one keystroke.</dd>
+
+  <dt>Empty the list</dt>
+  <dd>A button, with a confirmation.</dd>
+</dl>
+
+<h3>Total</h3>
+
+<p>Below the list, a read-only field <kbd>Tab</kbd> reaches. It gives the number
+of items and the estimated total. Estimated, because an item advertised as
+“2 for $5” carries no unit price and counts as zero.</p>
+
+<h3>Export — <kbd>Ctrl+S</kbd></h3>
+
+<p>Writes the list to a file. Three formats are offered: plain text, CSV for a
+spreadsheet, and Markdown. The file lands in your PromoAccess folder and its full
+path is announced.</p>
+
+<h2 id="sorting">8. Sorting the items</h2>
+
+<p>A <em>Sort by</em> dropdown sits just above each item list, on
+<kbd>Ctrl+2</kbd>, <kbd>Ctrl+3</kbd> and <kbd>Ctrl+4</kbd>. One setting for the
+three, remembered between sessions.</p>
+
+<dl>
+  <dt>Price, lowest first</dt>
+  <dd>The default. Items advertised without a number go last, rather than
+  pretending to be the best deal in the flyer.</dd>
+
+  <dt>Name, A to Z</dt>
+  <dd>Accents are ignored, so an item beginning with an accented E sorts with
+  the E words and not after Z.</dd>
+
+  <dt>Discount, highest first</dt>
+  <dd>Only about half the items carry a percentage: the banners do not all send
+  one. Those are not treated as zero — they go together at the end.</dd>
+
+  <dt>Brand</dt>
+  <dd>Same story. Roughly half the items name a brand, and it varies wildly from
+  one banner to the next.</dd>
+</dl>
+
+<p>After each change the application announces how many items actually carry the
+value you sorted on and how many do not — “2 with a percentage, 29 without”. The
+count is spoken <em>after</em> the name of the sort, so you hear what you chose
+and then what it gives.</p>
+
+<h2 id="details">9. Details of an item</h2>
+
+<h3>The details field</h3>
+
+<p>One <kbd>Tab</kbd> past each item list, on all three tabs. Read-only, and it
+never wraps: one <kbd>Down</kbd> press is one fact, so you can walk through it
+line by line.</p>
+
+<p>It holds the name in both languages when the banner gives both, the price, the
+original price and the saving when they are known, the format, the sale story,
+the banner, the dates, and the address of the product page. Entering the field
+asks the banner about that item at once.</p>
+
+<h3><kbd>Ctrl+D</kbd></h3>
+
+<p>Speaks the same thing as one sentence, without moving the focus. Useful while
+arrowing down a list.</p>
+
+<h3>Why two items can look identical but for the price</h3>
+
+<p>Banners advertise the same product several times in one week: a different
+format, a different variety, a members-only price, or the same deal repeated in
+two of their books. The feed does not always say which. When it says nothing,
+neither can we — the details field shows what was actually sent, and nothing
+invented.</p>
+
+<h3><kbd>Ctrl+Shift+O</kbd></h3>
+
+<p>Opens the product page on the banner's own site. Advertising redirectors are
+stripped first, so what opens is the product and not a click counter. When the
+address cannot be cleaned, nothing is opened.</p>
+
+<h2 id="shortcuts">10. Keyboard shortcuts</h2>
+
+<h3>Tabs</h3>
+
+<dl>
+  <dt><kbd>Ctrl+1</kbd></dt><dd>Settings — lands on the postal code.</dd>
+  <dt><kbd>Ctrl+2</kbd></dt><dd>Flyers — lands on the flyer list.</dd>
+  <dt><kbd>Ctrl+3</kbd></dt><dd>Search — lands on the search field.</dd>
+  <dt><kbd>Ctrl+4</kbd></dt><dd>Favorites — lands on the favorites list.</dd>
+  <dt><kbd>Ctrl+5</kbd></dt><dd>Shopping list — lands on the list.</dd>
+</dl>
+
+<p>The tab name is announced first, then the control.</p>
+
+<h3>Actions</h3>
+
+<dl>
+  <dt><kbd>F1</kbd></dt><dd>This manual.</dd>
+  <dt><kbd>F5</kbd></dt><dd>Sync the followed banners.</dd>
+  <dt><kbd>Ctrl+F</kbd></dt><dd>Go to the search field.</dd>
+  <dt><kbd>Ctrl+D</kbd></dt><dd>Speak the details of the selected item.</dd>
+  <dt><kbd>Ctrl+Shift+O</kbd></dt><dd>Open the product page.</dd>
+  <dt><kbd>Ctrl+S</kbd></dt><dd>Export the shopping list.</dd>
+</dl>
+
+<h3>In a list</h3>
+
+<dl>
+  <dt><kbd>Enter</kbd></dt>
+  <dd>On an item: add it to the shopping list. On a favorite: edit it.</dd>
+
+  <dt><kbd>Delete</kbd></dt>
+  <dd>On a favorite: delete it, with a confirmation. On a shopping list line:
+  remove it.</dd>
+
+  <dt><kbd>Space</kbd></dt>
+  <dd>Tick or untick a banner, in <kbd>Ctrl+1</kbd> and in the favorite
+  window.</dd>
+</dl>
+
+<h3>Everywhere</h3>
+
+<dl>
+  <dt><kbd>Tab</kbd> and <kbd>Shift+Tab</kbd></dt>
+  <dd>Move between controls.</dd>
+
+  <dt><kbd>Escape</kbd></dt>
+  <dd>Close the window on screen.</dd>
+</dl>
+
+<p>In the postal code field, <kbd>Enter</kbd> validates and syncs.</p>
+
+<h2 id="limits">11. What the banners provide</h2>
+
+<p>PromoAccess shows what the banners send, and nothing else. It never guesses a
+price, a format or a saving. When something is missing here, it was missing in
+what the banner published.</p>
+
+<h3>What is often missing</h3>
+
+<ul>
+  <li><strong>The original price.</strong> Only about one item in five carries
+  one, which is why the saving is not always available.</li>
+  <li><strong>The brand and the discount percentage.</strong> Roughly half the
+  items, and it varies enormously: one banner sends percentages and no brands,
+  another sends brands and almost no percentages.</li>
+  <li><strong>The product page.</strong> Some banners provide none at all.</li>
+</ul>
+
+<h3>There are no departments</h3>
+
+<p>No banner classifies its products by aisle — meat, bakery, produce. The flyer
+pages are named “Page 1”, “Page 2”, and an item carries no section at all. The
+grouping you would see on paper exists only in the printed image.</p>
+
+<h3>Some flyers are English only</h3>
+
+<p>Rare, but real: a few banners publish no French version. Costco's general
+merchandise book is one of them. The interface stays in your language; the
+product names cannot.</p>
+
+<h3>Two weeks at once</h3>
+
+<p>A flyer for next week appears before the current one expires. That is normal.
+The <em>Week</em> filter decides what you see.</p>
+
+<h2 id="about">12. About</h2>
+
+<h3>Where your data lives</h3>
+
+<p>Everything is in a single file, <code>cache.db</code>, in the PromoAccess
+folder of your Windows user profile: flyers, favorites, shopping list and
+settings. Exported lists land there too.</p>
+
+<p>Nothing is sent anywhere. The only connections made go to the flyer service,
+when you sync or ask for the details of an item.</p>
+
+<h3>Credits</h3>
+
+<ul>
+  <li>Flyer data: Flipp / Wishabi.</li>
+  <li>Town names for postal codes: GeoNames postal-code data,
+  <a href="https://download.geonames.org/export/zip/">download.geonames.org</a>,
+  used under the Creative Commons Attribution 4.0 licence.</li>
+  <li>Interface: wxWidgets. Cache: SQLite. JSON reading: nlohmann/json.</li>
+</ul>
+
+<p>Product names, prices and images belong to the banners that publish them.</p>
+
+</main>
+</div>
+
+<footer>
+  <p>PromoAccess — ReaperAccessible —
+  <a href="https://reaperaccessible.fr">reaperaccessible.fr</a></p>
+</footer>
+
+</body>
+</html>

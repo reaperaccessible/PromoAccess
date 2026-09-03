@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manuel de PromoAccess</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #555;
+    --accent: #0b5394;
+    --accent-bg: #e8f0fe;
+    --border: #cccccc;
+    --code-bg: #f4f4f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a;
+      --fg: #f0f0f0;
+      --muted: #b0b0b0;
+      --accent: #6fb1ff;
+      --accent-bg: #1f2d40;
+      --border: #444;
+      --code-bg: #2a2a2a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--fg);
+    background: var(--bg);
+    margin: 0;
+    padding: 0;
+  }
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    background: var(--accent);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    z-index: 100;
+  }
+  .skip:focus { left: 1rem; top: 1rem; }
+  header {
+    background: var(--accent-bg);
+    border-bottom: 2px solid var(--accent);
+    padding: 1.5rem 2rem;
+  }
+  header h1 { margin: 0 0 0.5rem 0; }
+  header p { margin: 0.25rem 0; color: var(--muted); }
+  .lang-switch a {
+    display: inline-block;
+    margin-left: 1rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  .lang-switch a:focus,
+  .lang-switch a:hover { outline: 3px solid var(--fg); }
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; padding: 1rem; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+  nav.toc {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    background: var(--accent-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+  }
+  nav.toc h2 { margin-top: 0; font-size: 1.1rem; }
+  nav.toc ol { padding-left: 1.5rem; margin: 0; }
+  nav.toc li { margin: 0.3rem 0; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover,
+  nav.toc a:focus { text-decoration: underline; outline: 2px solid var(--accent); }
+  main { min-width: 0; }
+  main h2 {
+    margin-top: 2.5rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--accent);
+    scroll-margin-top: 1rem;
+  }
+  main h3 { margin-top: 2rem; color: var(--accent); }
+  main p, main li { max-width: 70ch; }
+  main ul, main ol { padding-left: 1.5rem; }
+  dl { max-width: 70ch; }
+  dt { font-weight: bold; margin-top: 0.8rem; }
+  dd { margin: 0.2rem 0 0 1.5rem; }
+  kbd {
+    display: inline-block;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    padding: 0.1em 0.4em;
+    margin: 0 0.1em;
+    white-space: nowrap;
+  }
+  code {
+    font-family: "Cascadia Code", Consolas, monospace;
+    background: var(--code-bg);
+    padding: 0.15em 0.35em;
+    border-radius: 3px;
+    font-size: 0.92em;
+  }
+  .note {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-bg);
+    padding: 0.7rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+    max-width: 70ch;
+  }
+  .note strong { color: var(--accent); }
+  footer {
+    margin-top: 3rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    text-align: center;
+  }
+  a { color: var(--accent); }
+  a:focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main-content">Aller au contenu principal</a>
+
+<header>
+  <h1>Manuel de PromoAccess</h1>
+  <p>Les circulaires d'épicerie du Québec, accessibles au lecteur d'écran</p>
+  <p class="lang-switch">
+    <span lang="en">Language:</span>
+    <a href="manual_en.html" lang="en" hreflang="en">English version</a>
+  </p>
+</header>
+
+<div class="layout">
+
+<nav class="toc" aria-labelledby="toc-title">
+  <h2 id="toc-title">Table des matières</h2>
+  <ol>
+    <li><a href="#presentation">Présentation</a></li>
+    <li><a href="#premiers-pas">Premiers pas</a></li>
+    <li><a href="#reglages">Réglages</a></li>
+    <li><a href="#circulaires">Circulaires</a></li>
+    <li><a href="#recherche">Recherche</a></li>
+    <li><a href="#favoris">Favoris</a></li>
+    <li><a href="#liste">Liste d'épicerie</a></li>
+    <li><a href="#tri">Trier les articles</a></li>
+    <li><a href="#details">Détails d'un article</a></li>
+    <li><a href="#raccourcis">Raccourcis clavier</a></li>
+    <li><a href="#limites">Ce que les bannières fournissent</a></li>
+    <li><a href="#apropos">À propos</a></li>
+  </ol>
+</nav>
+
+<main id="main-content">
+
+<h2 id="presentation">1. Présentation</h2>
+
+<p>PromoAccess lit les circulaires hebdomadaires des bannières du Québec et les
+rend lisibles au lecteur d'écran.</p>
+
+<ul>
+  <li>Télécharger les circulaires des bannières que vous suivez.</li>
+  <li>Chercher un produit dans toutes les circulaires à la fois.</li>
+  <li>Garder des favoris permanents, revérifiés à chaque synchronisation.</li>
+  <li>Monter une liste d'épicerie et l'exporter dans un fichier.</li>
+</ul>
+
+<p>Tout est conservé sur votre ordinateur. Une fois la synchronisation faite, la
+navigation, la recherche et la liste fonctionnent hors ligne.</p>
+
+<p>Toute l'application se pilote au clavier. <kbd>Tab</kbd> avance,
+<kbd>Maj+Tab</kbd> recule, <kbd>Échap</kbd> ferme une fenêtre. Les cinq onglets
+sont <kbd>Ctrl+1</kbd> à <kbd>Ctrl+5</kbd>, et le nom de l'onglet est annoncé
+avant le contrôle sur lequel le focus arrive.</p>
+
+<h2 id="premiers-pas">2. Premiers pas</h2>
+
+<p>Trois choses à faire une seule fois, dans cet ordre.</p>
+
+<h3>Votre code postal</h3>
+
+<p>Appuyez sur <kbd>Ctrl+1</kbd>. Le focus arrive sur le champ du code postal.
+Écrivez les six caractères <strong>en un seul bloc, sans espace</strong> :
+<code>J3P7S7</code>. Majuscules ou minuscules, peu importe. Appuyez sur
+<kbd>Entrée</kbd>, ou sur <kbd>F5</kbd>, pour valider.</p>
+
+<p>Appuyez ensuite une fois sur <kbd>Tab</kbd> : un champ en lecture seule nomme
+la ville trouvée pour ce code. C'est ainsi que vous vérifiez que vous l'avez bien
+saisi.</p>
+
+<h3>Les bannières que vous suivez</h3>
+
+<p>Toujours dans <kbd>Ctrl+1</kbd>, descendez au <kbd>Tab</kbd> jusqu'à la liste
+des bannières. La barre d'espace coche et décoche. Cocher télécharge tout de
+suite les circulaires de cette bannière; décocher les retire du cache. Il n'y a
+rien d'autre à confirmer.</p>
+
+<h3>Synchroniser</h3>
+
+<p><kbd>F5</kbd>, à tout moment, télécharge les circulaires de toutes les
+bannières suivies. Une fois par semaine suffit, idéalement le mercredi ou le
+jeudi, quand les nouvelles circulaires sortent.</p>
+
+<p>Ensuite, <kbd>Ctrl+2</kbd> montre les circulaires et <kbd>Ctrl+3</kbd> les
+fouille.</p>
+
+<h2 id="reglages">3. Réglages — <kbd>Ctrl+1</kbd></h2>
+
+<p>Le focus arrive sur le champ du code postal.</p>
+
+<dl>
+  <dt>Code postal</dt>
+  <dd>Six caractères en un bloc. <kbd>Entrée</kbd> ou <kbd>F5</kbd> valide et
+  synchronise.</dd>
+
+  <dt>Emplacement</dt>
+  <dd>En lecture seule, à un <kbd>Tab</kbd>. Nomme la ville du code saisi.</dd>
+
+  <dt>Bannières à suivre</dt>
+  <dd>La barre d'espace coche et décoche, avec effet immédiat. Seules les
+  bannières suivies apparaissent dans les circulaires, la recherche et les
+  favoris.</dd>
+
+  <dt>Semaine</dt>
+  <dd>Cette semaine, la prochaine, ou les deux. Les bannières publient la
+  circulaire de la semaine prochaine avant que celle en cours expire, donc les
+  deux sont souvent en cache en même temps. Ce filtre s'applique partout.</dd>
+
+  <dt>Masquer les articles sans prix</dt>
+  <dd>Certaines entrées des circulaires sont des titres de section ou des
+  panneaux publicitaires sans produit derrière. Cochée, elles sont écartées.</dd>
+
+  <dt>Langue</dt>
+  <dd>Français ou anglais. Toute l'interface change. Les noms de produits
+  viennent des bannières et restent tels qu'elles les ont écrits.</dd>
+</dl>
+
+<h2 id="circulaires">4. Circulaires — <kbd>Ctrl+2</kbd></h2>
+
+<p>Le focus arrive sur la liste des circulaires. L'ordre de tabulation est :
+liste des circulaires, <em>Trier par</em>, articles de la circulaire choisie,
+détails de l'article, puis les boutons.</p>
+
+<h3>Liste des circulaires</h3>
+
+<p>Bannière, titre, nombre d'articles, valide jusqu'au. Une bannière publie
+souvent plusieurs circulaires en même temps : le livret principal, des encarts
+plus petits, et parfois un livret séparé de repas préparés. C'est à ça que sert
+la colonne du titre. Choisir une circulaire remplit la liste d'articles en
+dessous.</p>
+
+<h3>Articles</h3>
+
+<p>Article, prix, bannière, valide jusqu'au.</p>
+
+<ul>
+  <li><kbd>Entrée</kbd> ajoute l'article sélectionné à la liste d'épicerie.</li>
+  <li><kbd>Ctrl+D</kbd> énonce les détails de l'article sélectionné.</li>
+  <li><kbd>Ctrl+Maj+O</kbd> ouvre la fiche du produit dans votre navigateur,
+  quand la bannière en fournit une.</li>
+</ul>
+
+<p>Les boutons de l'onglet : Ajouter à la liste, Ajouter aux favoris, Détails,
+Fiche produit.</p>
+
+<h2 id="recherche">5. Recherche — <kbd>Ctrl+3</kbd></h2>
+
+<p>Le focus arrive sur le champ de recherche. <kbd>Ctrl+F</kbd> y mène depuis
+n'importe où. La recherche travaille sur le cache, jamais sur le réseau : les
+résultats sont instantanés et fonctionnent hors ligne.</p>
+
+<h3>Comment les mots sont comparés</h3>
+
+<ul>
+  <li>Chaque mot que vous écrivez doit apparaître quelque part dans l'article.</li>
+  <li>Les accents sont ignorés : <code>cereales</code> trouve
+  <code>CÉRÉALES</code>.</li>
+  <li>La casse est ignorée.</li>
+  <li>Un fragment compte : <code>fromag</code> trouve <code>fromage</code>.</li>
+</ul>
+
+<h3>Filtres</h3>
+
+<dl>
+  <dt>Bannière</dt>
+  <dd>Une seule, ou toutes.</dd>
+
+  <dt>Semaine</dt>
+  <dd>Cette semaine, la prochaine, les deux.</dd>
+
+  <dt>Prix maximum</dt>
+  <dd>Laissez vide pour tout prix. Les articles annoncés sans chiffre, du genre
+  « 2 pour 5 $ », sont conservés : ils peuvent très bien battre le plafond.</dd>
+</dl>
+
+<p><kbd>Entrée</kbd> dans le champ, ou le bouton Rechercher, lance la recherche.
+Le nombre de résultats est annoncé et le focus va au premier.</p>
+
+<h2 id="favoris">6. Favoris — <kbd>Ctrl+4</kbd></h2>
+
+<p>Le focus arrive sur la liste des favoris.</p>
+
+<div class="note">
+  <p><strong>Un favori est une règle, pas un produit épinglé.</strong> Les
+  articles des circulaires reçoivent des identifiants tout neufs chaque
+  semaine : un favori qui pointerait vers l'un d'eux serait mort en sept jours.
+  Ce qui est enregistré, ce sont les mots à chercher, revérifiés à chaque
+  synchronisation.</p>
+</div>
+
+<p>L'ordre de tabulation est : favoris, <em>En rabais en ce moment</em>, détails
+de l'article, <em>Trier par</em>, Nouveau, Modifier, Supprimer.</p>
+
+<h3>En créer un</h3>
+
+<p>Le bouton Nouveau, ou Ajouter aux favoris depuis n'importe quel article de
+<kbd>Ctrl+2</kbd> ou <kbd>Ctrl+3</kbd>. <kbd>Entrée</kbd> sur un favori le
+modifie. <kbd>Suppr</kbd> le supprime, avec une confirmation.</p>
+
+<h3>Dans la fenêtre du favori</h3>
+
+<dl>
+  <dt>Mots à rechercher</dt>
+  <dd>Ils doivent tous apparaître.</dd>
+
+  <dt>Bannières</dt>
+  <dd>Une liste à cocher. Cochez-en autant que vous voulez; aucune cochée veut
+  dire toutes les bannières.</dd>
+
+  <dt>Prix maximum</dt>
+  <dd>Vide pour tout prix.</dd>
+
+  <dt>Mots entiers seulement</dt>
+  <dd>Coché, « ail » trouve l'ail et pas les ailes de poulet. Décoché, un
+  fragment est trouvé partout : « fromag » trouve « fromage ». Coché par
+  défaut.</dd>
+
+  <dt>Actif</dt>
+  <dd>Décochez pour mettre un favori en pause sans l'effacer.</dd>
+</dl>
+
+<h3>En rabais en ce moment</h3>
+
+<p>Tout ce que les favoris actifs ont trouvé cette semaine, sans doublons.
+<kbd>Entrée</kbd> ajoute un article à la liste d'épicerie. Les prix initiaux de
+ces articles sont cherchés sans qu'on ait à les demander.</p>
+
+<h2 id="liste">7. Liste d'épicerie — <kbd>Ctrl+5</kbd></h2>
+
+<p>Le focus arrive sur la liste. Colonnes : article, quantité, prix, bannière,
+valide jusqu'au.</p>
+
+<h3>Ajouter</h3>
+
+<p><kbd>Entrée</kbd> sur un article dans <kbd>Ctrl+2</kbd>, <kbd>Ctrl+3</kbd> ou
+<kbd>Ctrl+4</kbd>, ou le bouton Ajouter à la liste. Ajouter deux fois le même
+article augmente sa quantité au lieu de créer une deuxième ligne.</p>
+
+<h3>Travailler la liste</h3>
+
+<dl>
+  <dt>Quantité</dt>
+  <dd>Un bouton, qui ouvre une petite fenêtre avec un nombre.</dd>
+
+  <dt>Retirer</dt>
+  <dd>La touche <kbd>Suppr</kbd>, ou le bouton. Sans confirmation : c'est une
+  ligne, et la remettre est une frappe.</dd>
+
+  <dt>Vider la liste</dt>
+  <dd>Un bouton, avec une confirmation.</dd>
+</dl>
+
+<h3>Total</h3>
+
+<p>Sous la liste, un champ en lecture seule que <kbd>Tab</kbd> atteint. Il donne
+le nombre d'articles et le total estimé. Estimé, parce qu'un article annoncé
+« 2 pour 5 $ » ne porte aucun prix unitaire et compte pour zéro.</p>
+
+<h3>Exporter — <kbd>Ctrl+S</kbd></h3>
+
+<p>Écrit la liste dans un fichier. Trois formats sont offerts : texte simple, CSV
+pour un tableur, et Markdown. Le fichier arrive dans votre dossier PromoAccess et
+son chemin complet est annoncé.</p>
+
+<h2 id="tri">8. Trier les articles</h2>
+
+<p>Une liste déroulante <em>Trier par</em> se trouve juste au-dessus de chaque
+liste d'articles, dans <kbd>Ctrl+2</kbd>, <kbd>Ctrl+3</kbd> et
+<kbd>Ctrl+4</kbd>. Un seul réglage pour les trois, retenu d'une session à
+l'autre.</p>
+
+<dl>
+  <dt>Prix, du plus bas</dt>
+  <dd>Le défaut. Les articles annoncés sans chiffre passent à la fin, plutôt que
+  de se faire passer pour la meilleure aubaine de la circulaire.</dd>
+
+  <dt>Nom, de A à Z</dt>
+  <dd>Les accents sont ignorés : un article qui commence par un « É » se classe
+  avec les E et non après les Z.</dd>
+
+  <dt>Rabais, du plus élevé</dt>
+  <dd>Environ un article sur deux porte un pourcentage : les bannières n'en
+  envoient pas toutes. Ceux qui n'en ont pas ne sont pas traités comme zéro —
+  ils vont ensemble à la fin.</dd>
+
+  <dt>Marque</dt>
+  <dd>Même histoire. Environ la moitié des articles nomment une marque, et ça
+  varie énormément d'une bannière à l'autre.</dd>
+</dl>
+
+<p>Après chaque changement, l'application annonce combien d'articles portent
+vraiment la valeur choisie et combien n'en portent pas — « 2 avec un
+pourcentage, 29 sans ». Le compte est énoncé <em>après</em> le nom du tri, pour
+que vous entendiez d'abord ce que vous avez choisi, puis ce que ça donne.</p>
+
+<h2 id="details">9. Détails d'un article</h2>
+
+<h3>Le champ des détails</h3>
+
+<p>À un <kbd>Tab</kbd> de chaque liste d'articles, sur les trois onglets. En
+lecture seule, et il ne se replie jamais : une frappe de <kbd>Bas</kbd> donne un
+fait, ce qui permet de le parcourir ligne par ligne.</p>
+
+<p>Il contient le nom dans les deux langues quand la bannière les fournit, le
+prix, le prix initial et l'économie quand ils sont connus, le format, le message
+promotionnel, la bannière, les dates, et l'adresse de la fiche produit. Entrer
+dans le champ interroge la bannière sur cet article immédiatement.</p>
+
+<h3><kbd>Ctrl+D</kbd></h3>
+
+<p>Énonce la même chose en une phrase, sans déplacer le focus. Pratique en
+descendant une liste à la flèche.</p>
+
+<h3>Pourquoi deux articles peuvent sembler identiques sauf le prix</h3>
+
+<p>Les bannières annoncent le même produit plusieurs fois dans une semaine : un
+format différent, une variété différente, un prix réservé aux membres, ou la
+même aubaine répétée dans deux de leurs livrets. Le flux ne dit pas toujours
+lequel. Quand il ne dit rien, nous non plus — le champ des détails montre ce qui
+a vraiment été envoyé, et rien d'inventé.</p>
+
+<h3><kbd>Ctrl+Maj+O</kbd></h3>
+
+<p>Ouvre la fiche du produit sur le site de la bannière. Les redirecteurs
+publicitaires sont retirés d'abord, pour que ce qui s'ouvre soit le produit et
+non un compteur de clics. Quand l'adresse ne peut pas être nettoyée, rien ne
+s'ouvre.</p>
+
+<h2 id="raccourcis">10. Raccourcis clavier</h2>
+
+<h3>Onglets</h3>
+
+<dl>
+  <dt><kbd>Ctrl+1</kbd></dt><dd>Réglages — arrive sur le code postal.</dd>
+  <dt><kbd>Ctrl+2</kbd></dt><dd>Circulaires — arrive sur la liste des circulaires.</dd>
+  <dt><kbd>Ctrl+3</kbd></dt><dd>Recherche — arrive sur le champ de recherche.</dd>
+  <dt><kbd>Ctrl+4</kbd></dt><dd>Favoris — arrive sur la liste des favoris.</dd>
+  <dt><kbd>Ctrl+5</kbd></dt><dd>Liste d'épicerie — arrive sur la liste.</dd>
+</dl>
+
+<p>Le nom de l'onglet est annoncé en premier, puis le contrôle.</p>
+
+<h3>Actions</h3>
+
+<dl>
+  <dt><kbd>F1</kbd></dt><dd>Ce manuel.</dd>
+  <dt><kbd>F5</kbd></dt><dd>Synchroniser les bannières suivies.</dd>
+  <dt><kbd>Ctrl+F</kbd></dt><dd>Aller au champ de recherche.</dd>
+  <dt><kbd>Ctrl+D</kbd></dt><dd>Énoncer les détails de l'article sélectionné.</dd>
+  <dt><kbd>Ctrl+Maj+O</kbd></dt><dd>Ouvrir la fiche produit.</dd>
+  <dt><kbd>Ctrl+S</kbd></dt><dd>Exporter la liste d'épicerie.</dd>
+</dl>
+
+<h3>Dans une liste</h3>
+
+<dl>
+  <dt><kbd>Entrée</kbd></dt>
+  <dd>Sur un article : l'ajouter à la liste d'épicerie. Sur un favori : le
+  modifier.</dd>
+
+  <dt><kbd>Suppr</kbd></dt>
+  <dd>Sur un favori : le supprimer, avec confirmation. Sur une ligne de la liste
+  d'épicerie : la retirer.</dd>
+
+  <dt><kbd>Espace</kbd></dt>
+  <dd>Cocher ou décocher une bannière, dans <kbd>Ctrl+1</kbd> et dans la fenêtre
+  du favori.</dd>
+</dl>
+
+<h3>Partout</h3>
+
+<dl>
+  <dt><kbd>Tab</kbd> et <kbd>Maj+Tab</kbd></dt>
+  <dd>Passer d'un contrôle à l'autre.</dd>
+
+  <dt><kbd>Échap</kbd></dt>
+  <dd>Fermer la fenêtre à l'écran.</dd>
+</dl>
+
+<p>Dans le champ du code postal, <kbd>Entrée</kbd> valide et synchronise.</p>
+
+<h2 id="limites">11. Ce que les bannières fournissent</h2>
+
+<p>PromoAccess montre ce que les bannières envoient, et rien d'autre. Il ne
+devine jamais un prix, un format ni une économie. Quand un renseignement manque
+ici, c'est qu'il manquait dans ce que la bannière a publié.</p>
+
+<h3>Ce qui manque souvent</h3>
+
+<ul>
+  <li><strong>Le prix initial.</strong> Environ un article sur cinq en porte un,
+  ce qui explique que l'économie ne soit pas toujours disponible.</li>
+  <li><strong>La marque et le pourcentage de rabais.</strong> À peu près la
+  moitié des articles, et ça varie énormément : une bannière envoie les
+  pourcentages et aucune marque, une autre les marques et presque aucun
+  pourcentage.</li>
+  <li><strong>La fiche produit.</strong> Certaines bannières n'en fournissent
+  aucune.</li>
+</ul>
+
+<h3>Il n'y a pas de rayons</h3>
+
+<p>Aucune bannière ne classe ses produits par rayon — viande, boulangerie,
+fruits et légumes. Les pages des circulaires s'appellent « Page 1 », « Page 2 »,
+et un article ne porte aucune section. Le regroupement que vous verriez sur le
+papier n'existe que dans l'image imprimée.</p>
+
+<h3>Certaines circulaires sont en anglais seulement</h3>
+
+<p>C'est rare, mais réel : quelques bannières ne publient aucune version
+française. Le livret de marchandise générale de Costco en fait partie.
+L'interface reste dans votre langue; les noms de produits, non.</p>
+
+<h3>Deux semaines à la fois</h3>
+
+<p>La circulaire de la semaine prochaine paraît avant que celle en cours expire.
+C'est normal. Le filtre <em>Semaine</em> décide de ce que vous voyez.</p>
+
+<h2 id="apropos">12. À propos</h2>
+
+<h3>Où vivent vos données</h3>
+
+<p>Tout est dans un seul fichier, <code>cache.db</code>, dans le dossier
+PromoAccess de votre profil Windows : circulaires, favoris, liste d'épicerie et
+réglages. Les listes exportées y arrivent aussi.</p>
+
+<p>Rien n'est envoyé nulle part. Les seules connexions établies vont au service
+des circulaires, quand vous synchronisez ou que vous demandez les détails d'un
+article.</p>
+
+<h3>Crédits</h3>
+
+<ul>
+  <li>Données des circulaires : Flipp / Wishabi.</li>
+  <li>Noms de villes des codes postaux : données postales GeoNames,
+  <a href="https://download.geonames.org/export/zip/">download.geonames.org</a>,
+  utilisées sous la licence Creative Commons Attribution 4.0.</li>
+  <li>Interface : wxWidgets. Cache : SQLite. Lecture JSON : nlohmann/json.</li>
+</ul>
+
+<p>Les noms de produits, les prix et les images appartiennent aux bannières qui
+les publient.</p>
+
+</main>
+</div>
+
+<footer>
+  <p>PromoAccess — ReaperAccessible —
+  <a href="https://reaperaccessible.fr">reaperaccessible.fr</a></p>
+</footer>
+
+</body>
+</html>
