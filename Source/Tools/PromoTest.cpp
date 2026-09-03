@@ -158,10 +158,20 @@ static void runOfflineChecks()
         checkEqual(cased("BARRES VAL NATURE 148/190 G"),
                    "Barres Val Nature 148/190 g", "and the unit comes down with it");
 
-        // Left alone: the banner said something with those capitals.
+        // Mixed case keeps its capitals — they were put there on purpose — but
+        // the name starts on one: a product name is a title, not the middle of
+        // a sentence. Super C opens 95 % of its names in lower case.
+        checkEqual(cased("fromage feta Irrésistible"),
+                   "Fromage feta Irrésistible", "a mixed-case name gets its first capital");
+        checkEqual(cased("fromage à la crème Philadelphia"),
+                   "Fromage à la crème Philadelphia", "and nothing else is touched");
         checkEqual(cased("biscuits Célébration Leclerc"),
-                   "biscuits Célébration Leclerc", "a name with lower case is left alone");
-        checkEqual(cased("125 g"), "125 g", "and so is one already lower");
+                   "Biscuits Célébration Leclerc", "brand capitals survive");
+        checkEqual(cased("Ailes de poulet Selection"),
+                   "Ailes de poulet Selection", "one already starting high is unchanged");
+        checkEqual(cased("125 g"), "125 g", "a name opening on a digit is left whole");
+        checkEqual(cased("épices à steak"), "Épices à steak",
+                   "the first capital works on an accented letter");
         checkEqual(cased(""), "", "an empty name survives");
     }
 
@@ -178,7 +188,7 @@ static void runOfflineChecks()
     // The feed carries one string, "français | english", whatever locale is
     // asked for.
     checkEqual(fmt::itemName("boeuf haché | ground beef").utf8_string(),
-               "boeuf haché", "itemName keeps one language");
+               "Boeuf haché", "itemName keeps one language");
 
     // The size is sometimes written only on the English side; dropping it would
     // leave a price with no format.
@@ -186,7 +196,7 @@ static void runOfflineChecks()
                "Framboises, 170 g", "itemName rescues a size left on the other side");
 
     checkEqual(fmt::itemName("jus de pomme Selection").utf8_string(),
-               "jus de pomme Selection", "itemName leaves a single-language name alone");
+               "Jus de pomme Selection", "itemName starts a single-language name high");
 
     // --- Savings -------------------------------------------------------------
     {
@@ -371,7 +381,7 @@ static void runOfflineChecks()
                 content = text;
             }
 
-            check(content.Contains("\"bifteck, format familial\""),
+            check(content.Contains("\"Bifteck, format familial\""),
                   "CSV quotes a field containing a comma");
             check(content.StartsWith("\xEF\xBB\xBF") || content.Contains("Metro"),
                   "CSV carries its content");

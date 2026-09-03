@@ -193,6 +193,30 @@ namespace
     }
 }
 
+namespace
+{
+    // A name written in mixed case keeps its capitals — "Irrésistible",
+    // "Kellogg's", "San Daniele" were put there on purpose — except the very
+    // first letter. Super C opens 95 % of its names in lower case, "fromage
+    // feta Irrésistible", and a product name is a title, not the middle of a
+    // sentence. A name that begins with a digit or a sign is left whole: "500 g
+    // de beurre" must not become "500 G de beurre".
+    wxString sentenceStart(const wxString& name)
+    {
+        if (name.empty())
+            return name;
+
+        const wxUniChar first = name[0];
+
+        if (!hasCase(first) || raised(first) == first)
+            return name;
+
+        wxString out = name;
+        out[0] = raised(first);
+        return out;
+    }
+}
+
 wxString properCase(const wxString& name)
 {
     // Does this name SHOUT?
@@ -212,11 +236,11 @@ wxString properCase(const wxString& name)
         anyLongWord = true;
 
         if (!allUpper(word))
-            return name;   // a banner that writes in mixed case meant it
+            return sentenceStart(name);   // mixed case: the banner meant it
     }
 
     if (!anyLongWord)
-        return name;
+        return sentenceStart(name);
 
     // Word by word. One already carrying a lower-case letter is left exactly as
     // it is — that is how "mL" survives — and a unit is lowered whatever it
