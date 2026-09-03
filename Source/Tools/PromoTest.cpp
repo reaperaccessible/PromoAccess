@@ -458,6 +458,29 @@ int main(int argc, char** argv)
         check(zero == 0, "an unstated discount is stored as -1, never as 0");
     }
 
+    // --- A line of the list is worth what it contributes -----------------------
+    // The row used to show the unit price while contributing the multiple to the
+    // total, so the total read as wrong to anyone adding the rows up by ear.
+    {
+        model::ListEntry e;
+        e.name     = "CREVETTES";
+        e.price    = 6.99;
+        e.quantity = 2;
+
+        const wxString line = fmt::lineTotal(e);
+        check(line.Contains(fmt::money(13.98)), "a line of two shows what the two cost");
+        check(line.Contains("2 x"),             "and shows the arithmetic behind it");
+
+        e.quantity = 1;
+        check(fmt::lineTotal(e) == fmt::price(e), "a single unit reads as its price");
+
+        // No number advertised: nothing to multiply, and nothing invented.
+        e.price     = 0.0;
+        e.priceText = "2 pour 5$";
+        e.quantity  = 3;
+        check(fmt::lineTotal(e) == fmt::price(e), "an item with no number is left alone");
+    }
+
     // --- The shopping list merges a repeat ------------------------------------
     // Adding the same product twice must raise the line it is already on. It
     // used to make a second identical row, which reads as a duplicate to

@@ -2330,6 +2330,7 @@ void MainWindow::reloadList()
     const long wasSelected = selectedRow(shoppingList_);
     shoppingList_->DeleteAllItems();
     double total = 0.0;
+    int    items = 0;
 
     for (size_t n = 0; n < listEntries_.size(); ++n)
     {
@@ -2337,17 +2338,22 @@ void MainWindow::reloadList()
 
         const long row = shoppingList_->InsertItem(static_cast<long>(n), u8(e.name));
         shoppingList_->SetItem(row, 1, wxString::Format("%d", e.quantity));
-        shoppingList_->SetItem(row, 2, fmt::price(e));
+        shoppingList_->SetItem(row, 2, fmt::lineTotal(e));
         shoppingList_->SetItem(row, 3, u8(e.merchantName));
         shoppingList_->SetItem(row, 4, fmt::validityDate(e.validTo));
 
         total += e.price * e.quantity;
+        items += e.quantity;
     }
 
     restoreSelection(shoppingList_, wasSelected);
 
-    listTotal_->ChangeValue(wxString::Format("%s%zu, %s%s",
-        loc::tr("Items: ", "Articles : "), listEntries_.size(),
+    // Articles counted, not lines. Two tins of the same thing are two articles
+    // on one line, and a field that answered "1" while the total charged for two
+    // is the field that made the total look wrong.
+    listTotal_->ChangeValue(wxString::Format("%s%d, %s%d, %s%s",
+        loc::tr("Items: ", "Articles : "), items,
+        loc::tr("lines: ", "lignes : "), static_cast<int>(listEntries_.size()),
         loc::tr("estimated total ", "total estimé "), fmt::money(total)));
 }
 

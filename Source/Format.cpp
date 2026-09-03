@@ -339,6 +339,22 @@ wxString price(const model::Item& item)
     return loc::tr("no price listed", "prix non indiqué");
 }
 
+wxString lineTotal(const model::ListEntry& entry)
+{
+    if (entry.quantity <= 1 || entry.price <= 0.0)
+        return price(entry);
+
+    wxString s = amount(entry.price * entry.quantity)
+               + wxString::Format(" (%d x %s)", entry.quantity, amount(entry.price));
+
+    // The banner's own wording is kept at the end, as it is for a single unit:
+    // "RABAIS DE 4$" is the reason the price is what it is.
+    if (!entry.priceText.empty())
+        s += " " + u8(entry.priceText);
+
+    return s;
+}
+
 wxString price(const model::ListEntry& entry)
 {
     if (entry.price > 0.0)

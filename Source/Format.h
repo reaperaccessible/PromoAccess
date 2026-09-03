@@ -20,6 +20,15 @@ namespace fmt
     // Same rule for a saved list line.
     wxString price(const model::ListEntry& entry);
 
+    // What one LINE of the shopping list is worth. With a quantity of one it is
+    // the price itself; above that it is the line total, with the arithmetic
+    // spelled out — "13,98 $ (2 x 6,99 $)".
+    //
+    // Without it the row said 6,99 while contributing 13,98 to the total, and
+    // the total read as wrong to anyone adding the rows up by ear. It is the
+    // line that was lying, not the sum.
+    wxString lineTotal(const model::ListEntry& entry);
+
     // "until September 9" / "jusqu'au 9 septembre", or an explicit "expired".
     // For running text — the export file — where nothing else supplies the
     // preposition.
