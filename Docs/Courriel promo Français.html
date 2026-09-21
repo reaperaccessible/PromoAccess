@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PromoAccess — Les circulaires d'épicerie enfin accessibles</title>
+<style>
+body { font-family: Arial, Helvetica, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #222; background: #fff; }
+h1 { font-size: 1.8em; border-bottom: 3px solid #2d5a8c; padding-bottom: 10px; }
+h2 { font-size: 1.3em; border-bottom: 2px solid #666; padding-bottom: 5px; margin-top: 32px; color: #1a1a2e; }
+p { margin: 12px 0; }
+ul { margin-left: 10px; }
+li { margin-bottom: 8px; }
+kbd { background: #eee; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px; font-family: monospace; font-size: 0.95em; }
+.tagline { font-style: italic; color: #555; font-size: 1.1em; margin-bottom: 25px; }
+.callout { background: #f0f4ff; border-left: 4px solid #2d5a8c; padding: 15px 20px; margin: 25px 0; }
+.callout a { color: #2d5a8c; font-weight: bold; }
+footer { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 10px; color: #666; font-size: 0.9em; }
+a { color: #2d5a8c; }
+</style>
+</head>
+<body>
+
+<header>
+<h1>PromoAccess — Les circulaires d'épicerie du Québec, enfin accessibles</h1>
+<p class="tagline">IGA, Metro, Super C, Maxi, Costco, Walmart et des dizaines d'autres bannières, entièrement au clavier, avec NVDA ou JAWS. Gratuit.</p>
+</header>
+
+<p>Bonjour,</p>
+
+<p>Chaque semaine, les épiceries du Québec publient leurs rabais dans des circulaires
+que tout le monde feuillette — sauf nous. Des pages d'images, des sites encombrés,
+des applications pensées pour l'œil. <strong>PromoAccess</strong> change ça&nbsp;:
+il télécharge les circulaires des bannières que vous suivez et les rend entièrement
+lisibles au lecteur d'écran, article par article, prix par prix.</p>
+
+<div class="callout">
+<p><strong>Téléchargement direct (lien permanent, toujours la dernière version)&nbsp;:</strong><br>
+<a href="https://github.com/reaperaccessible/PromoAccess/releases/latest/download/ReaperAccessible-PromoAccess-Installer.exe">
+Télécharger PromoAccess pour Windows</a></p>
+<p>Gratuit, sans compte, sans publicité. Windows 10 ou 11, 64&nbsp;bits.</p>
+</div>
+
+<h2>Ce que PromoAccess sait faire</h2>
+
+<ul>
+<li><strong>Les circulaires, article par article.</strong> Vous entrez votre code
+postal une seule fois, vous cochez vos bannières, et <kbd>F5</kbd> télécharge tout.
+Chaque article s'annonce avec son nom, son prix, son format et sa date de fin —
+y compris les prix à la livre, avec leur unité.</li>
+
+<li><strong>Une recherche dans toutes les circulaires à la fois.</strong> Tapez
+«&nbsp;poulet&nbsp;» et entendez tous les rabais de la semaine, toutes bannières
+confondues, triés du prix le plus bas. Les accents et la casse sont ignorés, et
+tout fonctionne hors ligne une fois la synchronisation faite.</li>
+
+<li><strong>Des favoris qui travaillent pour vous.</strong> Un favori n'est pas un
+produit épinglé, c'est une règle&nbsp;: «&nbsp;ail&nbsp;», «&nbsp;café&nbsp;»,
+«&nbsp;yogourt grec&nbsp;». À chaque synchronisation, PromoAccess reteste vos
+favoris et vous dit ce qui est en rabais en ce moment, magasin par magasin.</li>
+
+<li><strong>Une liste d'épicerie qui pense par magasin.</strong> Ajoutez un article
+d'une touche, choisissez la quantité, et consultez votre liste bannière par
+bannière, avec le total de ce que vous dépenserez dans <em>ce</em> magasin-là.
+L'enregistrement en texte crée un fichier par bannière — un fichier par
+déplacement.</li>
+
+<li><strong>Le détail complet d'un article.</strong> Prix courant, prix initial et
+économie quand la bannière les fournit, format, promotion, lien direct vers la
+fiche du produit sur le site du marchand. Un champ que le lecteur d'écran parcourt
+ligne par ligne, une frappe de flèche par fait.</li>
+
+<li><strong>Mise à jour automatique.</strong> PromoAccess vérifie au démarrage
+s'il existe une version plus récente, et se tait quand il n'y a rien de neuf.</li>
+</ul>
+
+<h2>Conçu accessible, pas rendu accessible</h2>
+
+<p>PromoAccess vient de ReaperAccessible et suit la même règle que nos autres
+logiciels&nbsp;: l'accessibilité n'est pas une couche ajoutée à la fin, c'est la
+contrainte de départ. Cinq onglets (<kbd>Ctrl+1</kbd> à <kbd>Ctrl+5</kbd>) dont le
+nom est annoncé avant tout le reste, des listes qui parlent dès qu'on y arrive,
+des annonces télégraphiques plutôt que bavardes, et pas un seul geste qui exige la
+souris. Le manuel complet, en français et en anglais, s'ouvre avec <kbd>F1</kbd>.</p>
+
+<p>Le logiciel est <strong>gratuit et open source</strong> (licence GPL-3.0). Le
+code est public&nbsp;:
+<a href="https://github.com/reaperaccessible/PromoAccess">github.com/reaperaccessible/PromoAccess</a>.</p>
+
+<h2>Pour commencer</h2>
+
+<ol>
+<li>Téléchargez et installez&nbsp;:
+<a href="https://github.com/reaperaccessible/PromoAccess/releases/latest/download/ReaperAccessible-PromoAccess-Installer.exe">lien
+de téléchargement direct</a>.</li>
+<li>Au premier lancement, <kbd>Ctrl+1</kbd>, entrez votre code postal en un seul
+bloc — par exemple <kbd>H2X1Y4</kbd> — puis <kbd>Entrée</kbd>.</li>
+<li>Cochez les bannières qui vous intéressent avec la barre d'espace.</li>
+<li><kbd>Ctrl+2</kbd> pour les circulaires, <kbd>Ctrl+3</kbd> pour chercher un
+produit. Bonne épicerie&nbsp;!</li>
+</ol>
+
+<p>Vos retours font le logiciel — les corrections des dernières semaines viennent
+toutes d'utilisateurs qui ont pris deux minutes pour écrire. Écrivez-nous à
+<a href="mailto:reaperaccessible@gmail.com">reaperaccessible@gmail.com</a>,
+visitez <a href="https://reaperaccessible.fr">reaperaccessible.fr</a>, ou ouvrez
+une issue sur GitHub.</p>
+
+<p>Bonnes aubaines,</p>
+
+<p><strong>L'équipe ReaperAccessible</strong></p>
+
+<footer>
+<p>ReaperAccessible — des logiciels conçus pour les personnes aveugles et
+malvoyantes, par des gens qui les utilisent.<br>
+<a href="https://reaperaccessible.fr">reaperaccessible.fr</a> —
+<a href="mailto:reaperaccessible@gmail.com">reaperaccessible@gmail.com</a> —
+<a href="https://github.com/reaperaccessible">github.com/reaperaccessible</a></p>
+<p>Les noms de produits, les prix et les images appartiennent aux bannières qui
+les publient. Données des circulaires&nbsp;: Flipp / Wishabi.</p>
+</footer>
+
+</body>
+</html>

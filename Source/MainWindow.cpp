@@ -3036,6 +3036,25 @@ void MainWindow::onSyncDone(wxThreadEvent& event)
     reloadFavorites();
     refreshLocation();
 
+    // The first run, before any banner is ticked. The sync has genuinely
+    // worked — the banner list below is now full — but the totals honestly say
+    // "0 items, 0 flyers", which reads as a failure and stops a new user cold:
+    // the app never told them the next gesture. Louis got exactly this far.
+    if (db_.merchants(true).empty())
+    {
+        const wxString text = loc::tr(
+            "Sync done. Now tick the banners to follow, in the list below, "
+            "with the space bar.",
+            "Synchronisation terminée. Cochez maintenant les bannières à "
+            "suivre, dans la liste plus bas, avec la barre d'espace.");
+
+        syncStatus_->SetLabel(text);
+        SetStatusText(text);
+        announce(text);
+        startNextQueuedSync();
+        return;
+    }
+
     // Name the banner when only one was fetched, so a tick is confirmed by what
     // it actually brought back rather than by a bare total.
     const wxString text = syncingMerchant_.empty()
@@ -3209,6 +3228,18 @@ void MainWindow::onPageChanged(wxBookCtrlEvent& event)
             // name it finds at the moment the focus event arrives.
             announceTabOnFocus(event.GetSelection());
             target->SetFocus();
+
+            // An empty flyers tab with no banner followed says why, and names
+            // the gesture — otherwise it is an empty list and silence, which a
+            // new user reads as a broken program rather than an unmade choice.
+            // Deferred, so the tab name is spoken first.
+            if (event.GetSelection() == PageFlyers
+                && flyers_.empty() && db_.merchants(true).empty())
+            {
+                announce(loc::tr("No banner followed. Tick banners in Settings, Ctrl+1.",
+                                 "Aucune bannière suivie. Cochez des bannières dans "
+                                 "Réglages, Ctrl+1."), 500);
+            }
         }
     }
 
