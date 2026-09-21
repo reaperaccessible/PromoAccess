@@ -207,6 +207,16 @@ static void runOfflineChecks()
     checkEqual(fmt::itemName("jus de pomme Selection").utf8_string(),
                "Jus de pomme Selection", "itemName starts a single-language name high");
 
+    // Jean Coutu writes a typographic bullet in front of some names.
+    checkEqual(fmt::itemName(wxString::FromUTF8("• Ensure protéine").utf8_string()).utf8_string(),
+               wxString::FromUTF8("Ensure protéine").utf8_string(),
+               "itemName drops a leading bullet");
+    checkEqual(fmt::itemName(wxString::FromUTF8("  • LAIT 2%, 2 L").utf8_string()).utf8_string(),
+               "Lait 2%, 2 l", "itemName drops spaces and bullet, then recases");
+    checkEqual(fmt::itemName(wxString::FromUTF8("• boeuf haché | • ground beef").utf8_string()).utf8_string(),
+               wxString::FromUTF8("Boeuf haché").utf8_string(),
+               "itemName drops the bullet on both halves of a pair");
+
     // --- Savings -------------------------------------------------------------
     {
         model::Item item;

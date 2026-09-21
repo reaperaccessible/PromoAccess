@@ -334,14 +334,36 @@ wxString recaseWords(const wxString& name)
 
 }   // namespace
 
-wxString itemName(const std::string& rawName)
+// Some banners — Jean Coutu among them — write a typographic bullet in front
+// of the product name, and a screen reader then announces it on every row.
+// Dropped wherever it leads a name, whatever the banner. U+2022 is E2 80 A2
+// in UTF-8.
+static std::string withoutLeadingBullet(const std::string& in)
 {
+    size_t n = 0;
+    for (;;)
+    {
+        if (n < in.size() && (in[n] == ' ' || in[n] == '\t'))
+            { ++n; continue; }
+        if (in.compare(n, 3, "\xE2\x80\xA2") == 0)
+            { n += 3; continue; }
+        break;
+    }
+    return in.substr(n);
+}
+
+wxString itemName(const std::string& fedName)
+{
+    const std::string rawName = withoutLeadingBullet(fedName);
+
     const size_t bar = rawName.find('|');
     if (bar == std::string::npos)
         return properCase(u8(rawName));
 
-    const std::string french  = trimmed(rawName.substr(0, bar));
-    const std::string english = trimmed(rawName.substr(bar + 1));
+    // Each half loses its own bullet too: a bilingual pair is written as two
+    // complete names, and the second carries the same decoration as the first.
+    const std::string french  = trimmed(withoutLeadingBullet(rawName.substr(0, bar)));
+    const std::string english = trimmed(withoutLeadingBullet(rawName.substr(bar + 1)));
 
     // A bar with nothing on one side is not a translation pair; leave it alone
     // rather than hand back an empty row.

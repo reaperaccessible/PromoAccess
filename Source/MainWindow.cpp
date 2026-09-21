@@ -2297,6 +2297,15 @@ void MainWindow::requestLocality(const std::string& postalCode)
 
 void MainWindow::reloadMerchants()
 {
+    // The banner the user is standing on, remembered by id rather than by row:
+    // ticking a banner queues a download, and when that download finishes this
+    // refill runs — without this, the focus snapped back to the first row of
+    // the list while the user was still working down it.
+    int focusedId = 0;
+    const long before = selectedRow(merchantList_);
+    if (before >= 0 && static_cast<size_t>(before) < merchants_.size())
+        focusedId = merchants_[before].id;
+
     merchants_ = db_.merchants(false);
 
     // CheckItem below emits the same event a user tick does, so the handler is
@@ -2313,6 +2322,18 @@ void MainWindow::reloadMerchants()
     }
 
     populatingMerchants_ = false;
+
+    if (focusedId != 0)
+    {
+        for (size_t n = 0; n < merchants_.size(); ++n)
+        {
+            if (merchants_[n].id == focusedId)
+            {
+                restoreSelection(merchantList_, static_cast<long>(n));
+                break;
+            }
+        }
+    }
 
     // The two banner dropdowns only ever offer followed banners: filtering by a
     // store whose flyers were never downloaded would just show nothing.
