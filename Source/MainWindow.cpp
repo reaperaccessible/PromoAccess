@@ -105,6 +105,7 @@ namespace
         ID_LIST_REMOVE, ID_LIST_CLEAR, ID_LIST_QUANTITY, ID_LIST_EXPORT,
         ID_LIST_PURGE,
         ID_DETAIL, ID_PRODUCT_PAGE,
+        ID_SEARCH_RUN, ID_CHECK_UPDATES,
         ID_TAB_1, ID_TAB_2, ID_TAB_3, ID_TAB_4, ID_TAB_5,
         ID_MERCHANT_TOGGLE, ID_HELP
     };
@@ -655,7 +656,7 @@ wxPanel* MainWindow::buildFlyersPage(wxNotebook* book)
 
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
     auto* add = new wxButton(page, ID_ADD_TO_LIST,
-                             loc::tr("Add to list", "Ajouter à la liste"));
+                             loc::tr("Add to list (Ctrl+L)", "Ajouter à la liste (Ctrl+L)"));
     auto* watch = new wxButton(page, ID_FAVORITE_FROM_ITEM,
                                loc::tr("Add to favorites (Ctrl+Shift+F)",
                                        "Ajouter aux favoris (Ctrl+Maj+F)"));
@@ -715,8 +716,10 @@ wxPanel* MainWindow::buildSearchPage(wxNotebook* book)
     searchMaxPrice_->Bind(wxEVT_TEXT_ENTER, [this](wxCommandEvent&) { runSearch(); });
 
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
-    auto* go = new wxButton(page, ID_SEARCH, loc::tr("Search", "Rechercher"));
-    auto* add = new wxButton(page, wxID_ANY, loc::tr("Add to list", "Ajouter à la liste"));
+    auto* go = new wxButton(page, ID_SEARCH,
+                            loc::tr("Search (Ctrl+R)", "Rechercher (Ctrl+R)"));
+    auto* add = new wxButton(page, wxID_ANY,
+                             loc::tr("Add to list (Ctrl+L)", "Ajouter à la liste (Ctrl+L)"));
     auto* watch = new wxButton(page, wxID_ANY,
                                loc::tr("Add to favorites (Ctrl+Shift+F)",
                                        "Ajouter aux favoris (Ctrl+Maj+F)"));
@@ -799,8 +802,10 @@ wxPanel* MainWindow::buildFavoritesPage(wxNotebook* book)
     sizer->Add(favoriteList_, 1, wxEXPAND | wxLEFT | wxRIGHT, border);
 
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
-    auto* add    = new wxButton(page, ID_FAVORITE_NEW, loc::tr("New", "Nouveau"));
-    auto* edit   = new wxButton(page, ID_FAVORITE_EDIT, loc::tr("Edit", "Modifier"));
+    auto* add    = new wxButton(page, ID_FAVORITE_NEW,
+                                loc::tr("New (Ctrl+N)", "Nouveau (Ctrl+N)"));
+    auto* edit   = new wxButton(page, ID_FAVORITE_EDIT,
+                                loc::tr("Edit (Ctrl+E)", "Modifier (Ctrl+E)"));
     auto* remove = new wxButton(page, ID_FAVORITE_DELETE,
                                 loc::tr("Delete (Del)", "Supprimer (Suppr)"));
     auto* help   = new wxButton(page, ID_HELP, loc::tr("Help (F1)", "Aide (F1)"));
@@ -928,12 +933,16 @@ wxPanel* MainWindow::buildListPage(wxNotebook* book)
     sizer->Add(listTotal_, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, border);
 
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
-    auto* quantity = new wxButton(page, ID_LIST_QUANTITY, loc::tr("Quantity", "Quantité"));
+    auto* quantity = new wxButton(page, ID_LIST_QUANTITY,
+                                  loc::tr("Quantity (Ctrl+Q)", "Quantité (Ctrl+Q)"));
     auto* remove   = new wxButton(page, ID_LIST_REMOVE,
                                   loc::tr("Remove (Del)", "Retirer (Suppr)"));
     auto* purge    = new wxButton(page, ID_LIST_PURGE,
-                                  loc::tr("Remove expired", "Retirer les expirés"));
-    auto* clear    = new wxButton(page, ID_LIST_CLEAR, loc::tr("Clear list", "Vider la liste"));
+                                  loc::tr("Remove expired (Ctrl+Shift+E)",
+                                          "Retirer les expirés (Ctrl+Maj+E)"));
+    auto* clear    = new wxButton(page, ID_LIST_CLEAR,
+                                  loc::tr("Clear list (Ctrl+Shift+V)",
+                                          "Vider la liste (Ctrl+Maj+V)"));
     auto* save     = new wxButton(page, ID_LIST_EXPORT,
                                   loc::tr("Save to file (Ctrl+S)", "Enregistrer (Ctrl+S)"));
     auto* help     = new wxButton(page, ID_HELP, loc::tr("Help (F1)", "Aide (F1)"));
@@ -1148,8 +1157,9 @@ wxPanel* MainWindow::buildSettingsPage(wxNotebook* book)
                     : loc::tr("Update check disabled.", "Vérification des mises à jour désactivée."));
     });
 
-    auto* updateButton = new wxButton(page, wxID_ANY,
-        loc::tr("Check for updates now", "Vérifier les mises à jour maintenant"));
+    auto* updateButton = new wxButton(page, ID_CHECK_UPDATES,
+        loc::tr("Check for updates now (Ctrl+U)",
+                "Vérifier les mises à jour maintenant (Ctrl+U)"));
     sizer->Add(updateButton, 0, wxLEFT | wxRIGHT | wxBOTTOM, border);
 
     // Asked for on purpose, so it answers even when there is nothing new.
@@ -1192,6 +1202,17 @@ void MainWindow::buildAccelerators()
         // items. The button for it sits several stops away on two of the three
         // tabs, and this is an action taken on the item under the cursor.
         { wxACCEL_CTRL | wxACCEL_SHIFT, 'F', ID_FAVORITE_FROM_ITEM },
+        // Add the selected item to the shopping list, same reach as above.
+        { wxACCEL_CTRL,   'L',     ID_ADD_TO_LIST },
+        // The rest are spoken on their buttons and act on their own tab only:
+        // fired from another tab they would change something invisible.
+        { wxACCEL_CTRL,   'R',     ID_SEARCH_RUN },
+        { wxACCEL_CTRL,   'N',     ID_FAVORITE_NEW },
+        { wxACCEL_CTRL,   'E',     ID_FAVORITE_EDIT },
+        { wxACCEL_CTRL,   'Q',     ID_LIST_QUANTITY },
+        { wxACCEL_CTRL | wxACCEL_SHIFT, 'E', ID_LIST_PURGE },
+        { wxACCEL_CTRL | wxACCEL_SHIFT, 'V', ID_LIST_CLEAR },
+        { wxACCEL_CTRL,   'U',     ID_CHECK_UPDATES },
     };
     SetAcceleratorTable(wxAcceleratorTable(WXSIZEOF(entries), entries));
 
@@ -1237,6 +1258,78 @@ void MainWindow::buildAccelerators()
         wxCommandEvent watch(wxEVT_BUTTON, ID_FAVORITE_FROM_ITEM);
         ProcessWindowEvent(watch);
     }, ID_FAVORITE_FROM_ITEM);
+
+    // Ctrl+L — add the item under the cursor to the shopping list, from any
+    // list that holds items, exactly the reach Ctrl+Shift+F has.
+    Bind(wxEVT_MENU, [this](wxCommandEvent&)
+    {
+        std::vector<model::Item>* items = nullptr;
+        wxListCtrl* list = focusedItemList(items);
+
+        if (list == nullptr || items == nullptr)
+        {
+            announce(loc::tr("No item selected.", "Aucun article sélectionné."));
+            return;
+        }
+
+        addSelectedToList(list, *items);
+    }, ID_ADD_TO_LIST);
+
+    // The remaining shortcuts each belong to one tab, like Ctrl+S below:
+    // anywhere else they would act on a selection the user cannot hear.
+    Bind(wxEVT_MENU, [this](wxCommandEvent&)
+    {
+        if (book_->GetSelection() == PageSearch)
+            runSearch();
+    }, ID_SEARCH_RUN);
+
+    Bind(wxEVT_MENU, [this](wxCommandEvent&)
+    {
+        if (book_->GetSelection() != PageFavorites)
+            return;
+        wxCommandEvent forward(wxEVT_BUTTON, ID_FAVORITE_NEW);
+        ProcessWindowEvent(forward);
+    }, ID_FAVORITE_NEW);
+
+    Bind(wxEVT_MENU, [this](wxCommandEvent&)
+    {
+        if (book_->GetSelection() != PageFavorites)
+            return;
+        wxCommandEvent forward(wxEVT_BUTTON, ID_FAVORITE_EDIT);
+        ProcessWindowEvent(forward);
+    }, ID_FAVORITE_EDIT);
+
+    Bind(wxEVT_MENU, [this](wxCommandEvent&)
+    {
+        if (book_->GetSelection() != PageList)
+            return;
+        wxCommandEvent forward(wxEVT_BUTTON, ID_LIST_QUANTITY);
+        ProcessWindowEvent(forward);
+    }, ID_LIST_QUANTITY);
+
+    Bind(wxEVT_MENU, [this](wxCommandEvent&)
+    {
+        if (book_->GetSelection() != PageList)
+            return;
+        wxCommandEvent forward(wxEVT_BUTTON, ID_LIST_PURGE);
+        ProcessWindowEvent(forward);
+    }, ID_LIST_PURGE);
+
+    Bind(wxEVT_MENU, [this](wxCommandEvent&)
+    {
+        if (book_->GetSelection() != PageList)
+            return;
+        wxCommandEvent forward(wxEVT_BUTTON, ID_LIST_CLEAR);
+        ProcessWindowEvent(forward);
+    }, ID_LIST_CLEAR);
+
+    Bind(wxEVT_MENU, [this](wxCommandEvent&)
+    {
+        if (book_->GetSelection() != PageSettings)
+            return;
+        wxCommandEvent forward(wxEVT_BUTTON, ID_CHECK_UPDATES);
+        ProcessWindowEvent(forward);
+    }, ID_CHECK_UPDATES);
     Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { announceSelectedDetail(); }, ID_DETAIL);
 
     Bind(wxEVT_MENU,   [this](wxCommandEvent&) { openSelectedProductPage(); }, ID_PRODUCT_PAGE);
@@ -1363,6 +1456,38 @@ void MainWindow::buildAccelerators()
         reloadList();
         announce(loc::tr("Removed: ", "Retiré : ") + name);
     }, ID_LIST_REMOVE);
+
+    // --- Tab bar ---------------------------------------------------------------
+    // Ctrl+Tab and Ctrl+Shift+Tab cycle through the tabs from anywhere, with
+    // wrap-around. Done here rather than left to the native control: the
+    // native handling only works while the focus sits on the tab strip, and it
+    // changes the page without a word. Going through SetSelection fires
+    // onPageChanged, which announces the tab and lands the focus on its
+    // primary control — the exact behaviour Ctrl+1 to Ctrl+5 already have.
+    Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& e)
+    {
+        if (e.GetKeyCode() == WXK_TAB && e.ControlDown() && !e.AltDown())
+        {
+            const int count = static_cast<int>(book_->GetPageCount());
+            const int step  = e.ShiftDown() ? count - 1 : 1;
+            book_->SetSelection((book_->GetSelection() + step) % count);
+            return;     // consumed
+        }
+
+        // Arrow keys on the tab strip do nothing. Left alone they switch tabs,
+        // which both duplicates Ctrl+Tab and throws the focus into the new
+        // page mid-keystroke; a tab bar is a place one lands by accident, not
+        // a control to drive.
+        if (FindFocus() == book_)
+        {
+            const int key = e.GetKeyCode();
+            if (key == WXK_LEFT || key == WXK_RIGHT
+                || key == WXK_NUMPAD_LEFT || key == WXK_NUMPAD_RIGHT)
+                return;     // consumed, deliberately silent
+        }
+
+        e.Skip();
+    });
 
     // Delete arrives through a key hook and not through the accelerator table.
     // An accelerator entry for a plain, unmodified key is never translated once
