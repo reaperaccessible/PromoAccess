@@ -368,6 +368,16 @@ MainWindow::MainWindow(const wxString& title)
     if (db_.setting(kSettingUpdates, "1") == "1")
         updateCheckTimer_.StartOnce(3000);
 
+    // A returning user opens the program to hear this week's deals, not to
+    // press F5 first: with banners already followed, the sync starts on its
+    // own. A first launch, with nothing followed yet, keeps the guided path —
+    // postal code, banners, then a manual sync. Slightly delayed for the same
+    // reason as the update check: the first moments belong to the screen
+    // reader announcing the window.
+    autoSyncTimer_.Bind(wxEVT_TIMER, [this](wxTimerEvent&) { startSync(); });
+    if (!db_.merchants(true).empty())
+        autoSyncTimer_.StartOnce(1500);
+
     layoutReady_ = true;
 }
 
@@ -647,7 +657,8 @@ wxPanel* MainWindow::buildFlyersPage(wxNotebook* book)
     auto* add = new wxButton(page, ID_ADD_TO_LIST,
                              loc::tr("Add to list", "Ajouter à la liste"));
     auto* watch = new wxButton(page, ID_FAVORITE_FROM_ITEM,
-                               loc::tr("Add to favorites", "Ajouter aux favoris"));
+                               loc::tr("Add to favorites (Ctrl+Shift+F)",
+                                       "Ajouter aux favoris (Ctrl+Maj+F)"));
     auto* detail = new wxButton(page, ID_DETAIL,
                                 loc::tr("Details (Ctrl+D)", "Détails (Ctrl+D)"));
     // Appended last, so it costs no extra tab stop on the way from the item list
@@ -655,10 +666,12 @@ wxPanel* MainWindow::buildFlyersPage(wxNotebook* book)
     auto* product = new wxButton(page, ID_PRODUCT_PAGE,
                                  loc::tr("Product page (", "Fiche produit (")
                                      + fmt::productPageKey() + ")");
+    auto* help = new wxButton(page, ID_HELP, loc::tr("Help (F1)", "Aide (F1)"));
     buttons->Add(add, 0, wxRIGHT, border);
     buttons->Add(watch, 0, wxRIGHT, border);
     buttons->Add(detail, 0, wxRIGHT, border);
-    buttons->Add(product, 0);
+    buttons->Add(product, 0, wxRIGHT, border);
+    buttons->Add(help, 0);
     sizer->Add(buttons, 0, wxALL, border);
 
     add->Bind(wxEVT_BUTTON, [this](wxCommandEvent&)
@@ -704,17 +717,21 @@ wxPanel* MainWindow::buildSearchPage(wxNotebook* book)
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
     auto* go = new wxButton(page, ID_SEARCH, loc::tr("Search", "Rechercher"));
     auto* add = new wxButton(page, wxID_ANY, loc::tr("Add to list", "Ajouter à la liste"));
-    auto* watch = new wxButton(page, wxID_ANY, loc::tr("Add to favorites", "Ajouter aux favoris"));
+    auto* watch = new wxButton(page, wxID_ANY,
+                               loc::tr("Add to favorites (Ctrl+Shift+F)",
+                                       "Ajouter aux favoris (Ctrl+Maj+F)"));
     auto* detail = new wxButton(page, ID_DETAIL,
                                 loc::tr("Details (Ctrl+D)", "Détails (Ctrl+D)"));
     auto* product = new wxButton(page, ID_PRODUCT_PAGE,
                                  loc::tr("Product page (", "Fiche produit (")
                                      + fmt::productPageKey() + ")");
+    auto* help = new wxButton(page, ID_HELP, loc::tr("Help (F1)", "Aide (F1)"));
     buttons->Add(go, 0, wxRIGHT, border);
     buttons->Add(add, 0, wxRIGHT, border);
     buttons->Add(watch, 0, wxRIGHT, border);
     buttons->Add(detail, 0, wxRIGHT, border);
-    buttons->Add(product, 0);
+    buttons->Add(product, 0, wxRIGHT, border);
+    buttons->Add(help, 0);
     sizer->Add(buttons, 0, wxALL, border);
 
     go->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { runSearch(); });
@@ -784,10 +801,13 @@ wxPanel* MainWindow::buildFavoritesPage(wxNotebook* book)
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
     auto* add    = new wxButton(page, ID_FAVORITE_NEW, loc::tr("New", "Nouveau"));
     auto* edit   = new wxButton(page, ID_FAVORITE_EDIT, loc::tr("Edit", "Modifier"));
-    auto* remove = new wxButton(page, ID_FAVORITE_DELETE, loc::tr("Delete", "Supprimer"));
+    auto* remove = new wxButton(page, ID_FAVORITE_DELETE,
+                                loc::tr("Delete (Del)", "Supprimer (Suppr)"));
+    auto* help   = new wxButton(page, ID_HELP, loc::tr("Help (F1)", "Aide (F1)"));
     buttons->Add(add, 0, wxRIGHT, border);
     buttons->Add(edit, 0, wxRIGHT, border);
-    buttons->Add(remove, 0);
+    buttons->Add(remove, 0, wxRIGHT, border);
+    buttons->Add(help, 0);
     sizer->Add(buttons, 0, wxALL, border);
 
     addLabel(page, sizer, loc::tr("Sort by:", "Trier par :"));
@@ -909,16 +929,20 @@ wxPanel* MainWindow::buildListPage(wxNotebook* book)
 
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
     auto* quantity = new wxButton(page, ID_LIST_QUANTITY, loc::tr("Quantity", "Quantité"));
-    auto* remove   = new wxButton(page, ID_LIST_REMOVE, loc::tr("Remove", "Retirer"));
+    auto* remove   = new wxButton(page, ID_LIST_REMOVE,
+                                  loc::tr("Remove (Del)", "Retirer (Suppr)"));
     auto* purge    = new wxButton(page, ID_LIST_PURGE,
                                   loc::tr("Remove expired", "Retirer les expirés"));
     auto* clear    = new wxButton(page, ID_LIST_CLEAR, loc::tr("Clear list", "Vider la liste"));
-    auto* save     = new wxButton(page, ID_LIST_EXPORT, loc::tr("Save to file", "Enregistrer"));
+    auto* save     = new wxButton(page, ID_LIST_EXPORT,
+                                  loc::tr("Save to file (Ctrl+S)", "Enregistrer (Ctrl+S)"));
+    auto* help     = new wxButton(page, ID_HELP, loc::tr("Help (F1)", "Aide (F1)"));
     buttons->Add(quantity, 0, wxRIGHT, border);
     buttons->Add(remove, 0, wxRIGHT, border);
     buttons->Add(purge, 0, wxRIGHT, border);
     buttons->Add(clear, 0, wxRIGHT, border);
-    buttons->Add(save, 0);
+    buttons->Add(save, 0, wxRIGHT, border);
+    buttons->Add(help, 0);
     sizer->Add(buttons, 0, wxALL, border);
 
     page->SetSizer(sizer);
@@ -1008,12 +1032,17 @@ wxPanel* MainWindow::buildSettingsPage(wxNotebook* book)
 
     postalHintTimer_.Bind(wxEVT_TIMER, [this](wxTimerEvent&)
     {
-        // Only when the field does not already hold a valid code. Now that
-        // Ctrl+1 lands here, the hint would otherwise be recited on every single
-        // visit to Settings — help the first time, nagging the tenth. Someone
-        // whose postal code is already entered does not need the rule restated.
+        // The full rule only while the field does not yet hold a valid code.
+        // Now that Ctrl+1 lands here, the format lesson would otherwise be
+        // recited on every single visit to Settings — help the first time,
+        // nagging the tenth. Once the code is in, only the gesture remains:
+        // what key actually launches the sync.
         if (postal::isValid(postalField_->GetValue().utf8_string()))
+        {
+            announce(loc::tr("Press Enter or F5 to sync.",
+                             "Entrée ou F5 pour synchroniser."));
             return;
+        }
 
         announce(loc::tr("Six characters in one block, no space, for example J3P7S7. "
                          "Press Enter or F5 to sync.",
@@ -1137,6 +1166,9 @@ wxPanel* MainWindow::buildSettingsPage(wxNotebook* book)
     syncButton_ = new wxButton(page, ID_SYNC, loc::tr("Sync now (F5)", "Synchroniser (F5)"));
     sizer->Add(syncButton_, 0, wxLEFT | wxRIGHT | wxBOTTOM, border);
 
+    auto* help = new wxButton(page, ID_HELP, loc::tr("Help (F1)", "Aide (F1)"));
+    sizer->Add(help, 0, wxLEFT | wxRIGHT | wxBOTTOM, border);
+
     page->SetSizer(sizer);
     return page;
 }
@@ -1185,6 +1217,8 @@ void MainWindow::buildAccelerators()
         }, ID_TAB_1 + n);
 
     Bind(wxEVT_MENU, [this](wxCommandEvent&) { openManual(); }, ID_HELP);
+    // The Help button every tab carries; same action as the F1 accelerator.
+    Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { openManual(); }, ID_HELP);
 
     Bind(wxEVT_MENU,   [this](wxCommandEvent&) { startSync(); }, ID_SYNC);
     Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { startSync(); }, ID_SYNC);

@@ -153,6 +153,7 @@ private:
 
     wxCheckBox*   autoUpdate_      = nullptr;
     wxTimer       updateCheckTimer_;
+    wxTimer       autoSyncTimer_;
     std::thread   updateThread_;
     bool          updateInFlight_  = false;
 
