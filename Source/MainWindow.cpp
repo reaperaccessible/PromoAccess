@@ -3036,12 +3036,16 @@ void MainWindow::exportList()
     }
 
     // The count is the useful part: it says how many stores the trip covers, and
-    // confirms a file was made for each of them.
-    announce(wxString::Format(
-        written == 1 ? loc::tr("One file saved, in %s.", "Un fichier enregistré, dans %s.")
-                     : loc::tr("%d files saved, one per banner, in %s.",
-                               "%d fichiers enregistrés, un par bannière, dans %s."),
-        written, base.GetPath()));
+    // confirms a file was made for each of them. Two separate Format calls: the
+    // one-file wording has no %d, so sharing the argument list would hand its
+    // %s the integer and crash — which is exactly what a one-banner list did.
+    announce(written == 1
+        ? wxString::Format(loc::tr("One file saved, in %s.",
+                                   "Un fichier enregistré, dans %s."),
+                           base.GetPath())
+        : wxString::Format(loc::tr("%d files saved, one per banner, in %s.",
+                                   "%d fichiers enregistrés, un par bannière, dans %s."),
+                           written, base.GetPath()));
 
     if (!firstError.empty())
         wxMessageBox(firstError, GetTitle(), wxOK | wxICON_WARNING, this);
