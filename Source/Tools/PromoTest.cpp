@@ -19,6 +19,7 @@
 #include "Postal.h"
 #include "Format.h"
 #include "Http.h"
+#include "Localization.h"
 #include "Updater.h"
 #include "Version.h"
 
@@ -449,6 +450,12 @@ int main(int argc, char** argv)
         std::printf("wxWidgets failed to initialize\n");
         return 1;
     }
+
+    // The expected names are the French halves of bilingual flyer text, so the
+    // checks run in French whatever the machine's own language is — an English
+    // Windows, such as the GitHub build machine, would otherwise pick the
+    // English half and fail four of them.
+    loc::setLanguage(loc::Language::French);
 
     runOfflineChecks();
 
