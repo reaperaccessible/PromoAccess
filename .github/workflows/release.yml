@@ -1,0 +1,128 @@
+# Builds PromoAccess on a Windows machine provided by GitHub and attaches the
+# installer to a DRAFT release, whenever a version tag is pushed (v1.23, v1.24…).
+#
+# A draft is invisible to the in-app updater: the release reaches users only
+# once someone has tested the installer and pressed "Publish release".
+#
+# Release notes are read from .github/release-notes/<tag>.md when that file
+# exists.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 180
+
+    env:
+      VCPKG_TRIPLET: x64-windows-static
+      # vcpkg keeps the libraries it compiled here, and the cache step below
+      # carries them to the next run: only the first build compiles wxWidgets.
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-cache
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version from the tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"                 # v1.23
+          $version = $tag.TrimStart('v')                  # 1.23
+          if ($version -notmatch '^(\d+)\.(\d{2})$') {
+            throw "Tag $tag is not of the form v1.23"
+          }
+          $quad = "$($Matches[1]).0.$([int]$Matches[2]).0" # 1.0.23.0
+
+          # The tag must match the version compiled into the program, or the
+          # updater would offer this release forever.
+          $header = Get-Content Source/Version.h -Raw
+          if ($header -notmatch "PROMO_VERSION_STR `"$([regex]::Escape($version))`"") {
+            throw "Source/Version.h does not say $version"
+          }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "quad=$quad"       >> $env:GITHUB_OUTPUT
+
+      - name: Restore the vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-${{ env.VCPKG_TRIPLET }}-${{ hashFiles('.github/workflows/release.yml') }}
+          restore-keys: vcpkg-${{ env.VCPKG_TRIPLET }}-
+
+      - name: Install wxWidgets and nlohmann-json
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+              "wxwidgets:$env:VCPKG_TRIPLET" "nlohmann-json:$env:VCPKG_TRIPLET"
+          if ($LASTEXITCODE -ne 0) { throw "vcpkg install failed" }
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+            "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            "-DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET"
+          if ($LASTEXITCODE -ne 0) { throw "CMake configure failed" }
+
+      - name: Build
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --parallel
+          if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+
+      - name: Offline checks
+        shell: pwsh
+        run: |
+          & build\Release\promotest.exe
+          if ($LASTEXITCODE -ne 0) { throw "promotest: $LASTEXITCODE failed check(s)" }
+
+      - name: Installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "Inno Setup install failed" }
+          }
+          & $iscc "/DMyAppVersion=${{ steps.version.outputs.version }}" `
+                  "/DMyAppVersionQuad=${{ steps.version.outputs.quad }}" `
+                  "/DSourceDir=$env:GITHUB_WORKSPACE" `
+                  "/DOutputDir=$env:GITHUB_WORKSPACE\Output" `
+                  installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
+
+          # The version-less twin: what the permanent download link and the
+          # in-app updater look for.
+          Copy-Item "Output\ReaperAccessible-PromoAccess-Installer_${{ steps.version.outputs.version }}.exe" `
+                    "Output\ReaperAccessible-PromoAccess-Installer.exe"
+
+      - name: Release notes
+        id: notes
+        shell: pwsh
+        run: |
+          $path = ".github/release-notes/${{ github.ref_name }}.md"
+          if (-not (Test-Path $path)) {
+            $path = "$env:RUNNER_TEMP\notes.md"
+            Set-Content $path "PromoAccess ${{ steps.version.outputs.version }}"
+          }
+          "path=$path" >> $env:GITHUB_OUTPUT
+
+      - name: Draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: PromoAccess ${{ steps.version.outputs.version }}
+          draft: true
+          body_path: ${{ steps.notes.outputs.path }}
+          files: |
+            Output/ReaperAccessible-PromoAccess-Installer.exe
+            Output/ReaperAccessible-PromoAccess-Installer_${{ steps.version.outputs.version }}.exe
