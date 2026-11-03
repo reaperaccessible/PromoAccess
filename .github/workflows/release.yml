@@ -1,0 +1,147 @@
+# Builds PromoAccess on a Windows machine provided by GitHub and attaches the
+# installer to a DRAFT release v<version>, the version being the one written in
+# Source/Version.h. It runs when a change to that file reaches main, and can be
+# started by hand from the Actions tab ("Run workflow"). A version that already
+# has a published release is left alone.
+#
+# A draft is invisible to the in-app updater: the release reaches users only
+# once someone has tested the installer and pressed "Publish release".
+#
+# Release notes are read from .github/release-notes/v<version>.md when that
+# file exists.
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [Source/Version.h]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 180
+
+    env:
+      VCPKG_TRIPLET: x64-windows-static
+      # vcpkg keeps the libraries it compiled here, and the cache step below
+      # carries them to the next run: only the first build compiles wxWidgets.
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-cache
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version from Source/Version.h
+        id: version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $header = Get-Content Source/Version.h -Raw
+          if ($header -notmatch 'PROMO_VERSION_STR "((\d+)\.(\d{2}))"') {
+            throw "No PROMO_VERSION_STR of the form 1.23 in Source/Version.h"
+          }
+          $version = $Matches[1]                                # 1.23
+          $quad    = "$($Matches[2]).0.$([int]$Matches[3]).0"   # 1.0.23.0
+          $tag     = "v$version"
+
+          # Already out: nothing to build. A draft is rebuilt and replaced.
+          $published = gh release view $tag --repo $env:GITHUB_REPOSITORY --json isDraft --jq '.isDraft' 2>$null
+          $skip = ($LASTEXITCODE -eq 0 -and $published -eq 'false')
+          if ($skip) { Write-Host "$tag is already published, nothing to do." }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "quad=$quad"       >> $env:GITHUB_OUTPUT
+          "tag=$tag"         >> $env:GITHUB_OUTPUT
+          "skip=$($skip.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          $global:LASTEXITCODE = 0
+
+      - name: Restore the vcpkg cache
+        if: steps.version.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-${{ env.VCPKG_TRIPLET }}-${{ hashFiles('.github/workflows/release.yml') }}
+          restore-keys: vcpkg-${{ env.VCPKG_TRIPLET }}-
+
+      - name: Install wxWidgets and nlohmann-json
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+              "wxwidgets:$env:VCPKG_TRIPLET" "nlohmann-json:$env:VCPKG_TRIPLET"
+          if ($LASTEXITCODE -ne 0) { throw "vcpkg install failed" }
+
+      - name: Configure
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+            "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            "-DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET"
+          if ($LASTEXITCODE -ne 0) { throw "CMake configure failed" }
+
+      - name: Build
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --parallel
+          if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+
+      - name: Offline checks
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          & build\Release\promotest.exe
+          if ($LASTEXITCODE -ne 0) { throw "promotest: $LASTEXITCODE failed check(s)" }
+
+      - name: Installer
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "Inno Setup install failed" }
+          }
+          & $iscc "/DMyAppVersion=${{ steps.version.outputs.version }}" `
+                  "/DMyAppVersionQuad=${{ steps.version.outputs.quad }}" `
+                  "/DSourceDir=$env:GITHUB_WORKSPACE" `
+                  "/DOutputDir=$env:GITHUB_WORKSPACE\Output" `
+                  installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
+
+          # The version-less twin: what the permanent download link and the
+          # in-app updater look for.
+          Copy-Item "Output\ReaperAccessible-PromoAccess-Installer_${{ steps.version.outputs.version }}.exe" `
+                    "Output\ReaperAccessible-PromoAccess-Installer.exe"
+
+      - name: Release notes
+        if: steps.version.outputs.skip != 'true'
+        id: notes
+        shell: pwsh
+        run: |
+          $path = ".github/release-notes/${{ steps.version.outputs.tag }}.md"
+          if (-not (Test-Path $path)) {
+            $path = "$env:RUNNER_TEMP\notes.md"
+            Set-Content $path "PromoAccess ${{ steps.version.outputs.version }}"
+          }
+          "path=$path" >> $env:GITHUB_OUTPUT
+
+      - name: Draft release
+        if: steps.version.outputs.skip != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: PromoAccess ${{ steps.version.outputs.version }}
+          draft: true
+          body_path: ${{ steps.notes.outputs.path }}
+          files: |
+            Output/ReaperAccessible-PromoAccess-Installer.exe
+            Output/ReaperAccessible-PromoAccess-Installer_${{ steps.version.outputs.version }}.exe
