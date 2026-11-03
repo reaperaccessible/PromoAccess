@@ -1474,16 +1474,21 @@ void MainWindow::buildAccelerators()
             return;     // consumed
         }
 
-        // Arrow keys on the tab strip do nothing. Left alone they switch tabs,
-        // which both duplicates Ctrl+Tab and throws the focus into the new
-        // page mid-keystroke; a tab bar is a place one lands by accident, not
-        // a control to drive.
+        // Arrow keys on the tab strip switch tabs, as on any Windows tab bar,
+        // and the focus stays on the strip: the native control does the
+        // switching and the reader announces the new tab itself. The flag
+        // tells onPageChanged not to move the focus into the page; Tab then
+        // enters it. Cleared once the key has been fully handled, so a later
+        // mouse click on a tab keeps its usual landing on the page.
         if (FindFocus() == book_)
         {
             const int key = e.GetKeyCode();
             if (key == WXK_LEFT || key == WXK_RIGHT
                 || key == WXK_NUMPAD_LEFT || key == WXK_NUMPAD_RIGHT)
-                return;     // consumed, deliberately silent
+            {
+                arrowOnTabStrip_ = true;
+                CallAfter([this] { arrowOnTabStrip_ = false; });
+            }
         }
 
         e.Skip();
@@ -3404,7 +3409,10 @@ void MainWindow::onPageChanged(wxBookCtrlEvent& event)
     // arrow keys move between tabs instead of through the content, and the first
     // thing announced is the tab name the user just chose — telling them nothing
     // they did not already know.
-    if (layoutReady_)
+    //
+    // Except when the change came from an arrow key on the strip itself: there
+    // the user is browsing the tabs, and the focus stays where they are.
+    if (layoutReady_ && !arrowOnTabStrip_)
     {
         if (wxWindow* target = primaryControl(event.GetSelection()))
         {

@@ -363,6 +363,11 @@ private:
     // controls it would focus exist. Set once the window is fully assembled.
     bool          layoutReady_ = false;
 
+    // Set while an arrow key pressed on the tab strip is being handled by the
+    // native control: the page it selects changes, but the focus stays on the
+    // strip, as on any Windows tab bar.
+    bool          arrowOnTabStrip_ = false;
+
     // One place lookup at a time, off the UI thread. Joined on destruction.
     std::thread       localityThread_;
     std::atomic<bool> localityBusy_{false};
